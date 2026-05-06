@@ -14,34 +14,31 @@
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useRef } = React;
 
-/* ─── INLINE SVG ICONS (no external dependency) ─────────────────────────── */
+/* ─── INLINE SVG ICONS ───────────────────────────────────────────────────── */
 const ICONS = {
   Check:         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>,
   ChevronRight:  <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/>,
   Download:      <><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 20h16"/></>,
-  FileText:      <><path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline strokeLinecap="round" strokeLinejoin="round" points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>,
+  FileText:      <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>,
   Target:        <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
-  Calendar:      <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+  Calendar:      <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
   BarChart3:     <><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></>,
-  AlertTriangle: <><path strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
-  ArrowRight:    <><line x1="5" y1="12" x2="19" y2="12"/><polyline strokeLinecap="round" strokeLinejoin="round" points="12 5 19 12 12 19"/></>,
-  Star:          <polygon strokeLinecap="round" strokeLinejoin="round" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
-  TrendingUp:    <><polyline strokeLinecap="round" strokeLinejoin="round" points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline strokeLinecap="round" strokeLinejoin="round" points="17 6 23 6 23 12"/></>,
+  AlertTriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+  ArrowRight:    <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
+  Star:          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+  Mail:          <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
+  Save:          <><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
+  RefreshCw:     <><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></>,
+  X:             <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
 };
 
 function Icon({ name, size = 16, color = 'currentColor', strokeWidth = 2, style }) {
   const paths = ICONS[name];
   if (!paths) return null;
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size} height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={strokeWidth}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size}
+      viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}
+      style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0, ...style }}>
       {paths}
     </svg>
   );
@@ -49,43 +46,56 @@ function Icon({ name, size = 16, color = 'currentColor', strokeWidth = 2, style 
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Chameleon GoToResolve dark token set */
   :root {
-    --brand-yellow: #FFD800;
-    --brand-navy: #1A1A2E;
-    --brand-blue-dark: #1A3C6B;
-    --brand-blue-mid: #2563B0;
-    --brand-blue-light: #D6E4F7;
-    --brand-orange: #E8610A;
-    --surface-dark: #111C2B;
-    --surface-card: #162032;
-    --surface-elevated: #1E2D42;
-    --text-primary: #E8EDF4;
-    --text-secondary: #8BA4C0;
-    --text-muted: #4A6080;
-    --border-subtle: rgba(37,99,176,0.25);
-    --border-active: rgba(37,99,176,0.6);
-    --success: #22C55E;
-    --warning: #FFD800;
-    --danger: #E8610A;
+    --font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    --font-mono:   'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+    --bg:          #171B1F;
+    --bg2:         #22292E;
+    --surface:     #22292E;
+    --surface2:    #2C353C;
+    --surface3:    #3D4852;
+
+    --brand:       #8552F6;
+    --brand-hover: #A37BFB;
+    --brand-subtle:rgba(133,82,246,0.14);
+    --brand-border:rgba(133,82,246,0.5);
+
+    --yellow:      #F2DD06;
+    --yellow-text: #171B1F;
+
+    --text1:       #FFFFFF;
+    --text2:       rgba(217,227,233,0.75);
+    --text3:       rgba(217,227,233,0.4);
+
+    --border:      rgba(88,121,143,0.45);
+    --border2:     rgba(88,121,143,0.7);
+
+    --success:     #2BA95C;
+    --success-bg:  rgba(43,169,92,0.12);
+    --danger:      #D33A61;
+    --danger-bg:   rgba(211,58,97,0.1);
+    --warning:     #F2DD06;
+    --warning-bg:  rgba(242,221,6,0.1);
+
+    --shadow-sm:   0 1px 3px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15);
+    --shadow-md:   0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-lg:   0 8px 24px rgba(0,0,0,0.35), 0 4px 8px rgba(0,0,0,0.2);
+
+    --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-pill: 1000px;
   }
 
   html, body { height: 100%; }
-
   body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--surface-dark);
-    color: var(--text-primary);
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text1);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
-
-  h1, h2, h3, h4 { font-family: 'Sora', sans-serif; }
-
-  .mono { font-family: 'DM Mono', monospace; }
 
   /* ── Intake ── */
   .intake-wrap {
@@ -95,509 +105,442 @@ const GLOBAL_CSS = `
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
+    background: var(--bg);
   }
 
-  .intake-inner { width: 100%; max-width: 680px; }
+  .intake-inner { width: 100%; max-width: 640px; }
+
+  .intake-logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand);
+    margin-bottom: 40px;
+    text-align: center;
+  }
 
   .progress-dots {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    margin-bottom: 48px;
+    margin-bottom: 44px;
   }
-
   .progress-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    transition: background 0.3s, transform 0.3s;
+    width: 6px; height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--surface3);
+    transition: background 0.25s, width 0.25s;
   }
-  .progress-dot.done { background: var(--brand-yellow); }
-  .progress-dot.active { background: var(--brand-yellow); transform: scale(1.35); }
+  .progress-dot.done  { background: var(--brand); }
+  .progress-dot.active{ background: var(--brand); width: 18px; }
 
-  .question-block { animation: fadeSlideIn 0.38s ease both; }
-  @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(18px); }
+  .question-block { animation: fadeUp 0.32s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
   .q-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--brand-yellow);
-    margin-bottom: 10px;
+    color: var(--brand);
+    margin-bottom: 8px;
   }
-
   .q-text {
-    font-family: 'Sora', sans-serif;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 28px;
+    color: var(--text1);
+    margin-bottom: 24px;
     line-height: 1.35;
   }
 
   .option-card {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 15px 18px;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle);
-    background: var(--surface-card);
+    gap: 12px;
+    padding: 13px 16px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
     cursor: pointer;
-    margin-bottom: 10px;
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    margin-bottom: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     user-select: none;
   }
   .option-card:hover {
-    border-color: var(--border-active);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    border-color: var(--border2);
+    box-shadow: var(--shadow-sm);
+    background: var(--surface2);
   }
   .option-card.selected {
-    border-color: var(--brand-yellow);
-    border-left: 3px solid var(--brand-yellow);
-    background: rgba(255,216,0,0.06);
+    border-color: var(--brand);
+    border-left: 3px solid var(--brand);
+    background: var(--brand-subtle);
   }
 
-  .option-check {
-    width: 20px; height: 20px;
+  .opt-indicator {
+    width: 18px; height: 18px;
     border-radius: 50%;
-    border: 2px solid var(--text-muted);
+    border: 2px solid var(--text3);
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .option-card.selected .option-check {
-    border-color: var(--brand-yellow);
-    background: var(--brand-yellow);
-  }
-
-  .option-check-box {
-    width: 20px; height: 20px;
-    border-radius: 4px;
-    border: 2px solid var(--text-muted);
+  .opt-indicator-sq {
+    width: 18px; height: 18px;
+    border-radius: var(--r-sm);
+    border: 2px solid var(--text3);
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .option-card.selected .option-check-box {
-    border-color: var(--brand-yellow);
-    background: var(--brand-yellow);
+  .option-card.selected .opt-indicator,
+  .option-card.selected .opt-indicator-sq {
+    border-color: var(--brand);
+    background: var(--brand);
   }
+  .opt-text { font-size: 14px; font-weight: 500; color: var(--text1); }
 
-  .option-text {
-    font-size: 15px;
-    color: var(--text-primary);
-    font-weight: 500;
+  /* ── Recall panel on intake screen ── */
+  .recall-panel {
+    margin-top: 32px;
+    padding: 20px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    background: var(--surface);
   }
-
-  .continue-btn {
-    margin-top: 20px;
-    padding: 13px 32px;
-    background: var(--brand-yellow);
-    color: var(--brand-navy);
-    border: none;
-    border-radius: 8px;
-    font-family: 'Sora', sans-serif;
-    font-size: 15px;
+  .recall-panel-title {
+    font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
-    display: flex;
+    color: var(--text2);
+    margin-bottom: 12px;
+    letter-spacing: 0.04em;
+  }
+  .recall-row { display: flex; gap: 8px; }
+  .recall-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text1);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .recall-input:focus { border-color: var(--brand); }
+  .recall-input::placeholder { color: var(--text3); }
+  .recall-msg {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--danger);
+  }
+  .recall-msg.ok { color: var(--success); }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: opacity 0.2s, transform 0.15s;
+    padding: 10px 20px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    white-space: nowrap;
   }
-  .continue-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-  .continue-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-primary:hover { background: var(--brand-hover); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text1); background: var(--surface2); }
 
   /* ── Loading ── */
   .loading-wrap {
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 28px;
-    padding: 20px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 24px; padding: 20px;
+    background: var(--bg);
   }
-
-  .loading-text {
-    font-family: 'Sora', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
+  .loading-label {
+    font-size: 18px; font-weight: 600; color: var(--text1);
   }
-
-  .loading-bar-track {
-    width: 320px;
-    height: 4px;
-    background: var(--surface-elevated);
-    border-radius: 2px;
+  .loading-sub { font-size: 13px; color: var(--text3); font-family: var(--font-mono); }
+  .loading-track {
+    width: 280px; height: 3px;
+    background: var(--surface3);
+    border-radius: var(--r-pill);
     overflow: hidden;
   }
-
-  .loading-bar-fill {
+  .loading-fill {
     height: 100%;
-    background: var(--brand-yellow);
-    border-radius: 2px;
-    animation: loadFill 1.2s ease forwards;
+    background: var(--brand);
+    border-radius: var(--r-pill);
+    animation: loadFill 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
   }
-  @keyframes loadFill {
-    from { width: 0%; }
-    to   { width: 100%; }
-  }
+  @keyframes loadFill { from { width: 0% } to { width: 100% } }
 
-  /* ── Output ── */
+  /* ── Output layout ── */
+  .output-wrap { background: var(--bg); min-height: 100vh; }
   .output-layout {
     display: flex;
-    min-height: 100vh;
-    max-width: 1140px;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 24px;
   }
 
-  .output-sidenav {
-    width: 220px;
+  .sidenav {
+    width: 200px;
     flex-shrink: 0;
-    padding: 40px 0;
+    padding: 36px 0;
     position: sticky;
     top: 0;
     height: 100vh;
     overflow-y: auto;
+    border-right: 1px solid var(--border);
   }
-
-  @media (max-width: 860px) { .output-sidenav { display: none; } }
+  @media (max-width: 820px) { .sidenav { display: none; } }
 
   .sidenav-logo {
-    font-family: 'Sora', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--brand-yellow);
-    margin-bottom: 32px;
-    letter-spacing: 0.04em;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--brand);
+    padding: 0 12px;
+    margin-bottom: 28px;
   }
-
   .sidenav-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--r-md);
+    font-size: 13px; font-weight: 500;
+    color: var(--text2);
     cursor: pointer;
-    margin-bottom: 2px;
-    transition: color 0.2s, background 0.2s;
     text-decoration: none;
+    margin-bottom: 2px;
+    transition: color 0.15s, background 0.15s;
   }
-  .sidenav-link:hover { color: var(--text-primary); background: var(--surface-card); }
-  .sidenav-link.active { color: var(--brand-yellow); background: rgba(255,216,0,0.06); }
+  .sidenav-link:hover { color: var(--text1); background: var(--surface2); }
+  .sidenav-link.active { color: var(--brand); background: var(--brand-subtle); }
 
   .output-main {
-    flex: 1;
-    min-width: 0;
-    padding: 40px 0 80px 40px;
+    flex: 1; min-width: 0;
+    padding: 36px 0 80px 40px;
   }
+  @media (max-width: 820px) { .output-main { padding: 24px 0 60px 0; } }
 
-  @media (max-width: 860px) { .output-main { padding: 24px 0 60px 0; } }
-
-  .output-header {
+  .output-topbar {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 40px;
     gap: 16px;
+    margin-bottom: 40px;
   }
-
   .output-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1.2;
+    font-size: 26px; font-weight: 700; color: var(--text1); line-height: 1.2;
   }
+  .output-subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .topbar-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 
-  .output-subtitle {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-top: 6px;
-  }
-
-  .export-btn {
-    padding: 11px 22px;
-    background: var(--brand-yellow);
-    color: var(--brand-navy);
-    border: none;
-    border-radius: 8px;
-    font-family: 'Sora', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    flex-shrink: 0;
-    white-space: nowrap;
-    transition: opacity 0.2s;
-  }
-  .export-btn:hover { opacity: 0.88; }
-
-  /* ── Output Sections ── */
-  .out-section {
-    margin-bottom: 48px;
-    animation: fadeSlideIn 0.45s ease both;
-  }
-
+  /* ── Sections ── */
+  .out-section { margin-bottom: 48px; animation: fadeUp 0.4s ease both; }
   .section-eyebrow {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--brand-yellow);
-    margin-bottom: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--brand); margin-bottom: 6px;
   }
-
   .section-heading {
-    font-family: 'Sora', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    font-size: 18px; font-weight: 700; color: var(--text1);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 22px 26px;
+  }
+  .card-accent {
+    background: var(--surface);
+    border: 1px solid var(--brand-border);
+    border-left: 3px solid var(--brand);
+    border-radius: var(--r-lg);
+    padding: 22px 26px;
+  }
+  .card-danger {
+    background: var(--danger-bg);
+    border: 1px solid rgba(211,58,97,0.3);
+    border-left: 3px solid var(--danger);
+    border-radius: var(--r-md);
+    padding: 16px 20px;
   }
 
-  .section-heading svg { color: var(--brand-blue-mid); flex-shrink: 0; }
+  .profile-text { font-size: 14px; line-height: 1.75; color: var(--text2); }
+  .profile-text strong { color: var(--text1); font-weight: 600; }
 
-  .divider {
-    height: 1px;
-    background: var(--border-subtle);
-    margin: 40px 0;
-  }
-
-  /* ── Profile Card ── */
-  .profile-card {
-    background: var(--surface-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: 10px;
-    padding: 24px 28px;
-    line-height: 1.75;
-    font-size: 15px;
-    color: var(--text-secondary);
-  }
-  .profile-card strong { color: var(--text-primary); font-weight: 600; }
-
-  /* ── First Value Block ── */
-  .first-value-block {
-    background: linear-gradient(135deg, rgba(26,60,107,0.4) 0%, rgba(30,45,66,0.6) 100%);
-    border: 1px solid var(--border-active);
-    border-left: 3px solid var(--brand-yellow);
-    border-radius: 10px;
-    padding: 24px 28px;
-    font-size: 15px;
-    color: var(--text-secondary);
-    line-height: 1.75;
-  }
-  .first-value-block strong { color: var(--text-primary); }
-
-  /* ── Week Cards ── */
-  .weeks-grid { display: flex; flex-direction: column; gap: 20px; }
-
+  /* ── Week cards ── */
+  .weeks-grid { display: flex; flex-direction: column; gap: 16px; }
   .week-card {
-    background: var(--surface-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s;
   }
-  .week-card:hover { border-color: var(--border-active); }
-
+  .week-card:hover { border-color: var(--border2); }
   .week-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 22px;
-    background: var(--surface-elevated);
-    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
   }
-
   .week-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--brand-navy);
-    background: var(--brand-yellow);
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--yellow-text);
+    background: var(--yellow);
+    padding: 2px 10px; border-radius: var(--r-pill);
+    font-weight: 600; flex-shrink: 0;
   }
-
-  .week-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .week-body { padding: 20px 22px; }
-
+  .week-title { font-size: 14px; font-weight: 600; color: var(--text1); }
+  .week-body { padding: 18px 20px; }
   .week-tasks { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .week-task { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--text2); line-height: 1.55; }
+  .task-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); flex-shrink: 0; margin-top: 8px; }
 
-  .week-task {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.55;
-  }
-
-  .task-bullet {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--brand-blue-mid);
-    flex-shrink: 0;
-    margin-top: 7px;
-  }
-
-  /* ── Metrics Table ── */
-  .metrics-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-  }
-
+  /* ── Metrics table ── */
+  .metrics-wrap { border-radius: var(--r-lg); border: 1px solid var(--border); overflow-x: auto; }
+  .metrics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .metrics-table th {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    background: var(--surface-elevated);
-    padding: 10px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text3); background: var(--surface2);
+    padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid var(--border);
   }
-
   .metrics-table td {
     padding: 12px 14px;
-    border-bottom: 1px solid var(--border-subtle);
-    color: var(--text-secondary);
-    vertical-align: top;
-    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2); vertical-align: top; line-height: 1.5;
   }
-
-  .metrics-table tr:nth-child(even) td { background: rgba(30,45,66,0.3); }
-
-  .metrics-table td:first-child { color: var(--text-primary); font-weight: 500; }
-
+  .metrics-table tr:last-child td { border-bottom: none; }
+  .metrics-table tr:nth-child(even) td { background: rgba(44,53,60,0.4); }
+  .metrics-table td:first-child { color: var(--text1); font-weight: 600; }
   .pass-pill {
     display: inline-block;
-    background: rgba(34,197,94,0.12);
-    color: var(--success);
-    border: 1px solid rgba(34,197,94,0.3);
-    padding: 2px 9px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    white-space: nowrap;
+    background: var(--success-bg); color: var(--success);
+    border: 1px solid rgba(43,169,92,0.3);
+    padding: 2px 8px; border-radius: var(--r-pill);
+    font-size: 11px; font-family: var(--font-mono); white-space: nowrap;
   }
 
-  /* ── Red Flags ── */
-  .red-flags { display: flex; flex-direction: column; gap: 16px; }
-
-  .red-flag-card {
-    background: rgba(232,97,10,0.06);
-    border: 1px solid rgba(232,97,10,0.25);
-    border-left: 3px solid var(--brand-orange);
-    border-radius: 8px;
-    padding: 18px 20px;
+  /* ── Red flags ── */
+  .red-flags { display: flex; flex-direction: column; gap: 14px; }
+  .flag-title {
+    font-size: 13.5px; font-weight: 600; color: var(--text1);
+    margin-bottom: 5px; display: flex; align-items: center; gap: 7px;
   }
+  .flag-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .flag-body strong { color: var(--text1); }
 
-  .red-flag-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  /* ── Next step ── */
+  .next-step-cta { font-size: 16px; font-weight: 600; color: var(--text1); margin-bottom: 10px; }
+  .next-step-body { font-size: 14px; color: var(--text2); line-height: 1.7; }
+  .next-step-body strong { color: var(--text1); }
+
+  /* ── Email save panel ── */
+  .save-panel {
+    margin-top: 48px;
+    padding: 24px 28px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--brand-border);
+    background: var(--brand-subtle);
   }
-
-  .red-flag-title svg { color: var(--brand-orange); }
-
-  .red-flag-body { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
-  .red-flag-body strong { color: var(--text-primary); }
-
-  /* ── Next Step ── */
-  .next-step-card {
-    background: linear-gradient(135deg, rgba(37,99,176,0.2) 0%, rgba(26,60,107,0.3) 100%);
-    border: 1px solid var(--border-active);
-    border-radius: 10px;
-    padding: 28px 32px;
+  .save-panel-title { font-size: 15px; font-weight: 600; color: var(--text1); margin-bottom: 4px; }
+  .save-panel-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .save-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .save-input {
+    flex: 1; min-width: 200px;
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text1);
+    font-family: var(--font); font-size: 14px;
+    outline: none; transition: border-color 0.15s;
   }
-
-  .next-step-cta {
-    font-family: 'Sora', sans-serif;
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 10px;
+  .save-input:focus { border-color: var(--brand); }
+  .save-input::placeholder { color: var(--text3); }
+  .save-feedback {
+    margin-top: 10px; font-size: 12px; color: var(--success);
+    display: flex; align-items: center; gap: 5px;
   }
+  .save-feedback.err { color: var(--danger); }
 
-  .next-step-body { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; }
-  .next-step-body strong { color: var(--text-primary); }
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 10px 20px;
+    font-size: 13px; font-weight: 500; color: var(--text1);
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.2s ease;
+    z-index: 999; white-space: nowrap;
+  }
+  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
 
   /* ── Print ── */
   @media print {
-    .output-sidenav, .export-btn, .intake-wrap, .loading-wrap { display: none !important; }
+    .sidenav, .topbar-actions, .save-panel, .toast, .btn-ghost, .btn-primary { display: none !important; }
     body { background: #fff !important; color: #111 !important; }
-    .output-layout { display: block !important; max-width: 100% !important; padding: 0 !important; }
+    .output-layout { display: block !important; padding: 0 !important; }
     .output-main { padding: 0 !important; }
-    .profile-card, .first-value-block, .week-card, .red-flag-card, .next-step-card {
-      background: #f8f9fa !important;
-      border-color: #ccc !important;
-      color: #222 !important;
+    .card, .card-accent, .week-card, .card-danger {
+      background: #f7f8fa !important; border-color: #ddd !important;
       break-inside: avoid;
     }
-    .week-header { background: #eef2f7 !important; }
-    .section-eyebrow, .q-label, .week-badge { color: #1a3c6b !important; background: transparent !important; }
-    .section-heading, .output-title, .week-title, .red-flag-title, .next-step-cta { color: #111 !important; }
-    .text-primary, .profile-card strong, .option-text { color: #111 !important; }
-    .text-secondary, .profile-card, .first-value-block, .week-task,
-    .red-flag-body, .next-step-body, .metrics-table td { color: #333 !important; }
-    .metrics-table th { color: #555 !important; background: #eef2f7 !important; }
-    .weeks-grid .week-card { page-break-inside: avoid; }
-    .print-header {
-      display: block !important;
-      text-align: center;
-      padding: 20px 0 10px;
-      border-bottom: 2px solid #1a3c6b;
-      margin-bottom: 24px;
-    }
-    .print-footer {
-      display: block !important;
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      text-align: center;
-      font-size: 10px;
-      color: #888;
-      padding: 8px;
-      border-top: 1px solid #ccc;
-    }
-    .out-section { page-break-inside: avoid; }
+    .week-header { background: #eef0f3 !important; }
+    .section-eyebrow, .q-label { color: #5c3abf !important; }
+    .section-heading, .output-title, .week-title, .flag-title, .next-step-cta,
+    .profile-text strong, .metrics-table td:first-child { color: #111 !important; }
+    .profile-text, .week-task, .flag-body, .next-step-body, .metrics-table td { color: #333 !important; }
+    .metrics-table th { background: #eef0f3 !important; color: #555 !important; }
+    .week-badge { color: #171B1F !important; background: #F2DD06 !important; }
+    .print-header { display: block !important; text-align: center; padding: 16px 0 10px; border-bottom: 2px solid #5c3abf; margin-bottom: 20px; }
+    .print-footer { display: block !important; position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #888; padding: 6px; border-top: 1px solid #ccc; }
   }
-
   .print-header { display: none; }
   .print-footer { display: none; }
 `;
+
 
 /* ─── INTAKE QUESTIONS ───────────────────────────────────────────────────── */
 const QUESTIONS = [
@@ -1226,31 +1169,82 @@ function buildNextStep(answers) {
   };
 }
 
+/* ─── localStorage HELPERS ───────────────────────────────────────────────── */
+const STORAGE_KEY = 'rg_saved_';
+
+function saveGuide(email, answers) {
+  const key = STORAGE_KEY + email.trim().toLowerCase();
+  localStorage.setItem(key, JSON.stringify({ answers, savedAt: Date.now() }));
+}
+
+function loadGuide(email) {
+  const key = STORAGE_KEY + email.trim().toLowerCase();
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
 /* ─── SUB-COMPONENTS ─────────────────────────────────────────────────────── */
+
+function HtmlBody({ html }) {
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
 
 function ProgressDots({ total, current }) {
   return (
     <div className="progress-dots">
       {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className={`progress-dot ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`}
-        />
+        <div key={i} className={`progress-dot ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`} />
       ))}
     </div>
   );
 }
 
-function IntakeQuestion({ question, answers, onAnswer, onContinue, qIndex }) {
+function RecallPanel() {
+  const [email, setEmail] = useState('');
+  const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState('err');
+
+  function handleRecall() {
+    const saved = loadGuide(email);
+    if (!saved) {
+      setMsg('No saved guide found for that email.');
+      setMsgType('err');
+      return;
+    }
+    // Dispatch a custom event the App listens for
+    window.dispatchEvent(new CustomEvent('rg:recall', { detail: saved.answers }));
+  }
+
+  return (
+    <div className="recall-panel">
+      <div className="recall-panel-title">Returning? Recall your saved guide.</div>
+      <div className="recall-row">
+        <input
+          className="recall-input"
+          type="email"
+          placeholder="your@email.com"
+          value={email}
+          onChange={e => { setEmail(e.target.value); setMsg(''); }}
+          onKeyDown={e => e.key === 'Enter' && handleRecall()}
+        />
+        <button className="btn-primary" onClick={handleRecall} disabled={!email.trim()}>
+          Recall <Icon name="RefreshCw" size={14} />
+        </button>
+      </div>
+      {msg && <div className={`recall-msg ${msgType === 'ok' ? 'ok' : ''}`}>{msg}</div>}
+    </div>
+  );
+}
+
+function IntakeQuestion({ question, answers, onAnswer, onContinue }) {
   const selected = answers[question.id];
   const isMulti = question.multi;
 
   function handleSelect(optId) {
     if (isMulti) {
-      const current = selected || [];
-      const next = current.includes(optId)
-        ? current.filter(x => x !== optId)
-        : [...current, optId];
+      const cur = selected || [];
+      const next = cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur, optId];
       onAnswer(question.id, next);
     } else {
       onAnswer(question.id, optId);
@@ -1260,36 +1254,23 @@ function IntakeQuestion({ question, answers, onAnswer, onContinue, qIndex }) {
   const hasSelection = isMulti ? (selected && selected.length > 0) : !!selected;
 
   return (
-    <div className="question-block" key={question.id}>
+    <div className="question-block">
       <div className="q-label">{question.label}</div>
       <div className="q-text">{question.text}</div>
       {question.options.map(opt => {
-        const isSelected = isMulti
-          ? (selected || []).includes(opt.id)
-          : selected === opt.id;
+        const isSel = isMulti ? (selected || []).includes(opt.id) : selected === opt.id;
         return (
-          <div
-            key={opt.id}
-            className={`option-card ${isSelected ? 'selected' : ''}`}
-            onClick={() => handleSelect(opt.id)}
-          >
-            <div className={isMulti ? 'option-check-box' : 'option-check'}>
-              {isSelected && (
-                <Icon name="Check" size={12} color="#1A1A2E" strokeWidth={3} />
-              )}
+          <div key={opt.id} className={`option-card ${isSel ? 'selected' : ''}`} onClick={() => handleSelect(opt.id)}>
+            <div className={isMulti ? 'opt-indicator-sq' : 'opt-indicator'}>
+              {isSel && <Icon name="Check" size={11} color="#fff" strokeWidth={3} />}
             </div>
-            <span className="option-text">{opt.label}</span>
+            <span className="opt-text">{opt.label}</span>
           </div>
         );
       })}
       {isMulti && (
-        <button
-          className="continue-btn"
-          disabled={!hasSelection}
-          onClick={onContinue}
-          style={{ marginTop: 20 }}
-        >
-          Continue <Icon name="ChevronRight" size={16} />
+        <button className="btn-primary" disabled={!hasSelection} onClick={onContinue} style={{ marginTop: 18 }}>
+          Continue <Icon name="ChevronRight" size={15} />
         </button>
       )}
     </div>
@@ -1299,44 +1280,28 @@ function IntakeQuestion({ question, answers, onAnswer, onContinue, qIndex }) {
 function LoadingView() {
   return (
     <div className="loading-wrap">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Icon name="Star" size={22} color="#FFD800" />
-        <span className="loading-text">Building your evaluation guide…</span>
-      </div>
-      <div className="loading-bar-track">
-        <div className="loading-bar-fill" />
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
-        Personalizing for your environment
-      </div>
+      <div className="loading-label">Building your evaluation guide…</div>
+      <div className="loading-track"><div className="loading-fill" /></div>
+      <div className="loading-sub">Personalizing for your environment</div>
     </div>
   );
 }
 
-function HtmlBody({ html }) {
-  return <span dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-function SideNav({ active, onNav }) {
+function SideNav({ onNav, active }) {
   const links = [
-    { id: 'profile',     label: 'Evaluation Profile',   icon: <Icon name="FileText" size={13} /> },
-    { id: 'firstvalue',  label: 'First Value Target',   icon: <Icon name="Target" size={13} /> },
-    { id: 'testplan',    label: 'Test Plan',             icon: <Icon name="Calendar" size={13} /> },
-    { id: 'metrics',     label: 'Success Metrics',      icon: <Icon name="BarChart3" size={13} /> },
-    { id: 'redflags',    label: 'Red Flags',             icon: <Icon name="AlertTriangle" size={13} /> },
-    { id: 'nextstep',    label: 'Next Step',             icon: <Icon name="ArrowRight" size={13} /> },
+    { id: 'profile',    label: 'Evaluation Profile',  icon: 'FileText'    },
+    { id: 'firstvalue', label: 'First Value Target',   icon: 'Target'      },
+    { id: 'testplan',   label: 'Test Plan',            icon: 'Calendar'    },
+    { id: 'metrics',    label: 'Success Metrics',      icon: 'BarChart3'   },
+    { id: 'redflags',   label: 'Red Flags',            icon: 'AlertTriangle'},
+    { id: 'nextstep',   label: 'Next Step',            icon: 'ArrowRight'  },
   ];
   return (
-    <nav className="output-sidenav">
+    <nav className="sidenav">
       <div className="sidenav-logo">GoTo Resolve</div>
       {links.map(l => (
-        <a
-          key={l.id}
-          className={`sidenav-link ${active === l.id ? 'active' : ''}`}
-          onClick={() => onNav(l.id)}
-          href={`#${l.id}`}
-        >
-          {l.icon} {l.label}
+        <a key={l.id} href={`#${l.id}`} className={`sidenav-link ${active === l.id ? 'active' : ''}`} onClick={() => onNav(l.id)}>
+          <Icon name={l.icon} size={13} /> {l.label}
         </a>
       ))}
     </nav>
@@ -1352,10 +1317,10 @@ function WeekCard({ week }) {
       </div>
       <div className="week-body">
         <ul className="week-tasks">
-          {week.tasks.map((task, i) => (
+          {week.tasks.map((t, i) => (
             <li key={i} className="week-task">
-              <span className="task-bullet" />
-              <span>{task}</span>
+              <span className="task-dot" />
+              <span>{t}</span>
             </li>
           ))}
         </ul>
@@ -1366,12 +1331,12 @@ function WeekCard({ week }) {
 
 function MetricsTable({ metrics }) {
   return (
-    <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+    <div className="metrics-wrap">
       <table className="metrics-table">
         <thead>
           <tr>
             <th>Metric</th>
-            <th>How to Measure in Resolve</th>
+            <th>How to Measure</th>
             <th>Passing Result</th>
             <th>Why It Matters</th>
           </tr>
@@ -1391,151 +1356,156 @@ function MetricsTable({ metrics }) {
   );
 }
 
-function RedFlagCard({ flag }) {
+function Toast({ msg }) {
+  return <div className="toast">{msg}</div>;
+}
+
+function SavePanel({ answers }) {
+  const [email, setEmail] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [isErr, setIsErr] = useState(false);
+
+  function handleSave() {
+    const trimmed = email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setFeedback('Please enter a valid email address.');
+      setIsErr(true);
+      return;
+    }
+    saveGuide(trimmed, answers);
+    setFeedback('Guide saved! Enter this email on the start screen to recall it anytime.');
+    setIsErr(false);
+  }
+
   return (
-    <div className="red-flag-card">
-      <div className="red-flag-title">
-        <Icon name="AlertTriangle" size={15} />
-        {flag.title}
+    <div className="save-panel">
+      <div className="save-panel-title">Save your guide</div>
+      <div className="save-panel-sub">Enter your email to save this guide. You can recall it anytime from the start screen — even if you close the browser.</div>
+      <div className="save-row">
+        <input
+          className="save-input"
+          type="email"
+          placeholder="your@email.com"
+          value={email}
+          onChange={e => { setEmail(e.target.value); setFeedback(''); }}
+          onKeyDown={e => e.key === 'Enter' && handleSave()}
+        />
+        <button className="btn-primary" onClick={handleSave} disabled={!email.trim()}>
+          <Icon name="Save" size={14} /> Save Guide
+        </button>
       </div>
-      <div className="red-flag-body"><HtmlBody html={flag.body} /></div>
+      {feedback && <div className={`save-feedback ${isErr ? 'err' : ''}`}>
+        {!isErr && <Icon name="Check" size={13} />} {feedback}
+      </div>}
     </div>
   );
 }
 
 function OutputView({ answers, onReset }) {
-  const [activeSection, setActiveSection] = useState('profile');
+  const [active, setActive] = useState('profile');
+  const [toast, setToast] = useState('');
 
-  const profile   = buildProfileSummary(answers);
-  const firstVal  = buildFirstValue(answers);
-  const weeks     = buildWeeklyPlan(answers);
-  const metrics   = buildMetrics(answers);
-  const redFlags  = buildRedFlags(answers);
-  const nextStep  = buildNextStep(answers);
+  const profile  = buildProfileSummary(answers);
+  const firstVal = buildFirstValue(answers);
+  const weeks    = buildWeeklyPlan(answers);
+  const metrics  = buildMetrics(answers);
+  const flags    = buildRedFlags(answers);
+  const nextStep = buildNextStep(answers);
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  }
 
   function handleExport() {
     window.print();
   }
 
   return (
-    <div>
+    <div className="output-wrap">
       <div className="print-header">
-        <strong style={{ fontSize: 18 }}>GoTo Resolve</strong>
-        <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Trial Evaluation Guide</div>
+        <strong style={{ fontSize: 16 }}>GoTo Resolve — Trial Evaluation Guide</strong>
       </div>
       <div className="print-footer">
         GoTo Resolve Trial Evaluation Guide | Prepared by GoTo Solutions Consulting | Confidential
       </div>
 
       <div className="output-layout">
-        <SideNav active={activeSection} onNav={setActiveSection} />
+        <SideNav active={active} onNav={setActive} />
         <main className="output-main">
-          <div className="output-header">
+          <div className="output-topbar">
             <div>
-              <div className="output-title">Your GoTo Resolve<br />Evaluation Guide</div>
-              <div className="output-subtitle">
-                Personalized for {getRoleLabel(answers.role)} · {getEnvLabel(answers.envSize)}
-              </div>
+              <div className="output-title">Your GoTo Resolve Evaluation Guide</div>
+              <div className="output-subtitle">{getRoleLabel(answers.role)} · {getEnvLabel(answers.envSize)}</div>
             </div>
-            <button className="export-btn" onClick={handleExport}>
-              <Icon name="Download" size={15} /> Export Guide
-            </button>
+            <div className="topbar-actions">
+              <button className="btn-ghost" onClick={onReset}>
+                <Icon name="X" size={13} /> Start Over
+              </button>
+              <button className="btn-primary" onClick={handleExport}>
+                <Icon name="Download" size={14} /> Export PDF
+              </button>
+            </div>
           </div>
 
-          {/* Section 1 — Profile */}
           <section id="profile" className="out-section">
             <div className="section-eyebrow">Section 01</div>
-            <div className="section-heading">
-              <Icon name="FileText" size={18} /> Your Evaluation Profile
-            </div>
-            <div className="profile-card">{profile}</div>
+            <div className="section-heading"><Icon name="FileText" size={17} /> Your Evaluation Profile</div>
+            <div className="card"><p className="profile-text">{profile}</p></div>
           </section>
-
           <div className="divider" />
 
-          {/* Section 2 — First Value */}
           <section id="firstvalue" className="out-section">
             <div className="section-eyebrow">Section 02</div>
-            <div className="section-heading">
-              <Icon name="Target" size={18} /> Your First Value Target
-            </div>
-            <div className="first-value-block">{firstVal}</div>
+            <div className="section-heading"><Icon name="Target" size={17} /> Your First Value Target</div>
+            <div className="card-accent"><p className="profile-text">{firstVal}</p></div>
           </section>
-
           <div className="divider" />
 
-          {/* Section 3 — Test Plan */}
           <section id="testplan" className="out-section">
             <div className="section-eyebrow">Section 03</div>
-            <div className="section-heading">
-              <Icon name="Calendar" size={18} /> Your Personalized 30-Day Test Plan
-            </div>
-            <div className="weeks-grid">
-              {weeks.map((w, i) => <WeekCard key={i} week={w} />)}
-            </div>
+            <div className="section-heading"><Icon name="Calendar" size={17} /> Your Personalized 30-Day Test Plan</div>
+            <div className="weeks-grid">{weeks.map((w, i) => <WeekCard key={i} week={w} />)}</div>
           </section>
-
           <div className="divider" />
 
-          {/* Section 4 — Metrics */}
           <section id="metrics" className="out-section">
             <div className="section-eyebrow">Section 04</div>
-            <div className="section-heading">
-              <Icon name="BarChart3" size={18} /> Success Metrics
-            </div>
+            <div className="section-heading"><Icon name="BarChart3" size={17} /> Success Metrics</div>
             <MetricsTable metrics={metrics} />
           </section>
-
           <div className="divider" />
 
-          {/* Section 5 — Red Flags */}
           <section id="redflags" className="out-section">
             <div className="section-eyebrow">Section 05</div>
-            <div className="section-heading">
-              <Icon name="AlertTriangle" size={18} /> Red Flags to Watch For
-            </div>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.65 }}>
-              These are honest indicators of genuine product fit issues — not learning curve friction.
-              Knowing the difference will save you from both a false negative and a false positive on this evaluation.
+            <div className="section-heading"><Icon name="AlertTriangle" size={17} /> Red Flags to Watch For</div>
+            <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.65 }}>
+              These indicate genuine product fit issues — not learning curve friction. Knowing the difference saves you from both a false positive and a false negative.
             </p>
             <div className="red-flags">
-              {redFlags.map((f, i) => <RedFlagCard key={i} flag={f} />)}
+              {flags.map((f, i) => (
+                <div key={i} className="card-danger">
+                  <div className="flag-title"><Icon name="AlertTriangle" size={14} color="var(--danger)" /> {f.title}</div>
+                  <div className="flag-body"><HtmlBody html={f.body} /></div>
+                </div>
+              ))}
             </div>
           </section>
-
           <div className="divider" />
 
-          {/* Section 6 — Next Step */}
           <section id="nextstep" className="out-section">
             <div className="section-eyebrow">Section 06</div>
-            <div className="section-heading">
-              <Icon name="ArrowRight" size={18} /> Your Next Step
-            </div>
-            <div className="next-step-card">
+            <div className="section-heading"><Icon name="ArrowRight" size={17} /> Your Next Step</div>
+            <div className="card-accent">
               <div className="next-step-cta">{nextStep.cta}</div>
               <div className="next-step-body"><HtmlBody html={nextStep.body} /></div>
             </div>
           </section>
 
-          <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid var(--border-subtle)' }}>
-            <button
-              onClick={onReset}
-              style={{
-                background: 'none',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-muted)',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: 'DM Mono, monospace',
-              }}
-            >
-              ← Start Over
-            </button>
-          </div>
+          <SavePanel answers={answers} />
         </main>
       </div>
+      {toast && <Toast msg={toast} />}
     </div>
   );
 }
@@ -1547,22 +1517,27 @@ function ResolveTrialGuide() {
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const autoAdvanceTimer = useRef(null);
-  // Store qIndex in a ref so setTimeout callbacks always see the latest value
   const qIndexRef = useRef(0);
 
-  useEffect(() => {
-    qIndexRef.current = qIndex;
-  }, [qIndex]);
+  useEffect(() => { qIndexRef.current = qIndex; }, [qIndex]);
 
   useEffect(() => {
-    const existing = document.getElementById('resolve-guide-styles');
-    if (!existing) {
+    // Inject styles
+    if (!document.getElementById('rg-styles')) {
       const el = document.createElement('style');
-      el.id = 'resolve-guide-styles';
+      el.id = 'rg-styles';
       el.textContent = GLOBAL_CSS;
       document.head.appendChild(el);
     }
+    // Listen for recall events from RecallPanel
+    function onRecall(e) {
+      setAnswers(e.detail);
+      setPhase('loading');
+      setTimeout(() => setPhase('output'), 1400);
+    }
+    window.addEventListener('rg:recall', onRecall);
     return () => {
+      window.removeEventListener('rg:recall', onRecall);
       if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
     };
   }, []);
@@ -1570,9 +1545,9 @@ function ResolveTrialGuide() {
   const totalQ = QUESTIONS.length;
   const currentQ = QUESTIONS[qIndex];
 
-  function advance(currentIndex) {
-    if (currentIndex < totalQ - 1) {
-      setQIndex(currentIndex + 1);
+  function advance(idx) {
+    if (idx < totalQ - 1) {
+      setQIndex(idx + 1);
     } else {
       setPhase('loading');
       setTimeout(() => setPhase('output'), 1400);
@@ -1584,15 +1559,12 @@ function ResolveTrialGuide() {
     setAnswers(updated);
     if (!currentQ.multi) {
       if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-      // Capture current index in a local variable — safe from stale closure
-      const capturedIndex = qIndexRef.current;
-      autoAdvanceTimer.current = setTimeout(() => advance(capturedIndex), 400);
+      const captured = qIndexRef.current;
+      autoAdvanceTimer.current = setTimeout(() => advance(captured), 400);
     }
   }
 
-  function handleContinue() {
-    advance(qIndexRef.current);
-  }
+  function handleContinue() { advance(qIndexRef.current); }
 
   function handleReset() {
     setAnswers({});
@@ -1602,11 +1574,12 @@ function ResolveTrialGuide() {
   }
 
   if (phase === 'loading') return <LoadingView />;
-  if (phase === 'output') return <OutputView answers={answers} onReset={handleReset} />;
+  if (phase === 'output')  return <OutputView answers={answers} onReset={handleReset} />;
 
   return (
     <div className="intake-wrap">
       <div className="intake-inner">
+        <div className="intake-logo">GoTo Resolve</div>
         <ProgressDots total={totalQ} current={qIndex} />
         <IntakeQuestion
           key={currentQ.id}
@@ -1614,8 +1587,8 @@ function ResolveTrialGuide() {
           answers={answers}
           onAnswer={handleAnswer}
           onContinue={handleContinue}
-          qIndex={qIndex}
         />
+        {qIndex === 0 && <RecallPanel />}
       </div>
     </div>
   );
