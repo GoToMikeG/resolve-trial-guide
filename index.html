@@ -4,20 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GoTo Resolve — Trial Success Guide</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>html,body,#root{height:100%;margin:0;padding:0;}</style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-presets="react">
-    const { useState, useEffect, useRef } = React;
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+// resolve-trial-guide.jsx — GoTo Resolve Trial Evaluation Tool
 
-/* ─── INLINE SVG ICONS ───────────────────────────────────────────────────── */
+/* ─── ICONS ──────────────────────────────────────────────────────────────── */
 const ICONS = {
   Check:         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>,
   ChevronRight:  <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/>,
+  ChevronDown:   <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6"/>,
   Download:      <><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 20h16"/></>,
   FileText:      <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>,
   Target:        <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
@@ -30,518 +31,252 @@ const ICONS = {
   Save:          <><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
   RefreshCw:     <><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></>,
   X:             <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+  ClipboardList: <><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></>,
+  Award:         <><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></>,
+  Edit3:         <><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
 };
-
-function Icon({ name, size = 16, color = 'currentColor', strokeWidth = 2, style }) {
-  const paths = ICONS[name];
-  if (!paths) return null;
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size}
-      viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}
-      style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0, ...style }}>
-      {paths}
-    </svg>
-  );
+function Icon({ name, size=16, color='currentColor', strokeWidth=2, style }) {
+  const p = ICONS[name]; if (!p) return null;
+  return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} style={{display:'inline-block',verticalAlign:'middle',flexShrink:0,...style}}>{p}</svg>;
 }
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  /* Chameleon GoToResolve dark token set */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   :root {
-    --font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-    --font-mono:   'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen-Sans,Ubuntu,Cantarell,'Helvetica Neue',sans-serif;
+    --font-mono: 'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --bg:#171B1F; --bg2:#22292E; --surface:#22292E; --surface2:#2C353C; --surface3:#3D4852;
+    --brand:#8552F6; --brand-hover:#A37BFB; --brand-subtle:rgba(133,82,246,0.14); --brand-border:rgba(133,82,246,0.5);
+    --yellow:#F2DD06; --yellow-text:#171B1F;
+    --text1:#FFFFFF; --text2:rgba(217,227,233,0.75); --text3:rgba(217,227,233,0.4);
+    --border:rgba(88,121,143,0.45); --border2:rgba(88,121,143,0.7);
+    --success:#2BA95C; --success-bg:rgba(43,169,92,0.12);
+    --danger:#D33A61;  --danger-bg:rgba(211,58,97,0.1);
+    --warning:#F2DD06; --warning-bg:rgba(242,221,6,0.1);
+    --amber:#F59E0B;   --amber-bg:rgba(245,158,11,0.1);
+    --grey:#6B7280;    --grey-bg:rgba(107,114,128,0.12);
+    --shadow-sm:0 1px 3px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.15);
+    --shadow-md:0 4px 12px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.2);
+    --shadow-lg:0 8px 24px rgba(0,0,0,.35),0 4px 8px rgba(0,0,0,.2);
+    --r-sm:4px; --r-md:8px; --r-lg:12px; --r-pill:1000px;
+  }
+  html,body{height:100%;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text1);line-height:1.6;-webkit-font-smoothing:antialiased;}
 
-    --bg:          #171B1F;
-    --bg2:         #22292E;
-    --surface:     #22292E;
-    --surface2:    #2C353C;
-    --surface3:    #3D4852;
+  /* ── Layout shells ── */
+  .full-center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:var(--bg);}
+  .inner{width:100%;max-width:640px;}
 
-    --brand:       #8552F6;
-    --brand-hover: #A37BFB;
-    --brand-subtle:rgba(133,82,246,0.14);
-    --brand-border:rgba(133,82,246,0.5);
+  /* ── Brand mark ── */
+  .brand-mark{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin-bottom:36px;text-align:center;}
 
-    --yellow:      #F2DD06;
-    --yellow-text: #171B1F;
+  /* ── Progress dots ── */
+  .progress-dots{display:flex;gap:6px;justify-content:center;margin-bottom:40px;}
+  .pdot{width:6px;height:6px;border-radius:var(--r-pill);background:var(--surface3);transition:background .25s,width .25s;}
+  .pdot.done{background:var(--brand);}
+  .pdot.active{background:var(--brand);width:18px;}
 
-    --text1:       #FFFFFF;
-    --text2:       rgba(217,227,233,0.75);
-    --text3:       rgba(217,227,233,0.4);
+  /* ── Animations ── */
+  .fade-up{animation:fadeUp .32s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 
-    --border:      rgba(88,121,143,0.45);
-    --border2:     rgba(88,121,143,0.7);
+  /* ── Question block ── */
+  .q-eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);margin-bottom:8px;}
+  .q-text{font-size:20px;font-weight:600;color:var(--text1);margin-bottom:22px;line-height:1.35;}
+  .q-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.55;}
 
-    --success:     #2BA95C;
-    --success-bg:  rgba(43,169,92,0.12);
-    --danger:      #D33A61;
-    --danger-bg:   rgba(211,58,97,0.1);
-    --warning:     #F2DD06;
-    --warning-bg:  rgba(242,221,6,0.1);
+  /* ── Option cards ── */
+  .opt-card{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface);cursor:pointer;margin-bottom:8px;transition:border-color .15s,box-shadow .15s,background .15s;user-select:none;}
+  .opt-card:hover{border-color:var(--border2);box-shadow:var(--shadow-sm);background:var(--surface2);}
+  .opt-card.selected{border-color:var(--brand);border-left:3px solid var(--brand);background:var(--brand-subtle);}
+  .opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--text3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s;}
+  .opt-check{width:18px;height:18px;border-radius:var(--r-sm);border:2px solid var(--text3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s;}
+  .opt-card.selected .opt-radio,.opt-card.selected .opt-check{border-color:var(--brand);background:var(--brand);}
+  .opt-label{font-size:14px;font-weight:500;color:var(--text1);}
 
-    --shadow-sm:   0 1px 3px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15);
-    --shadow-md:   0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
-    --shadow-lg:   0 8px 24px rgba(0,0,0,0.35), 0 4px 8px rgba(0,0,0,0.2);
-
-    --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-pill: 1000px;
-  }
-
-  html, body { height: 100%; }
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text1);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ── Intake ── */
-  .intake-wrap {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    background: var(--bg);
-  }
-
-  .intake-inner { width: 100%; max-width: 640px; }
-
-  .intake-logo {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--brand);
-    margin-bottom: 40px;
-    text-align: center;
-  }
-
-  .progress-dots {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    margin-bottom: 44px;
-  }
-  .progress-dot {
-    width: 6px; height: 6px;
-    border-radius: var(--r-pill);
-    background: var(--surface3);
-    transition: background 0.25s, width 0.25s;
-  }
-  .progress-dot.done  { background: var(--brand); }
-  .progress-dot.active{ background: var(--brand); width: 18px; }
-
-  .question-block { animation: fadeUp 0.32s ease both; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .q-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--brand);
-    margin-bottom: 8px;
-  }
-  .q-text {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text1);
-    margin-bottom: 24px;
-    line-height: 1.35;
-  }
-
-  .option-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 13px 16px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    cursor: pointer;
-    margin-bottom: 8px;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-    user-select: none;
-  }
-  .option-card:hover {
-    border-color: var(--border2);
-    box-shadow: var(--shadow-sm);
-    background: var(--surface2);
-  }
-  .option-card.selected {
-    border-color: var(--brand);
-    border-left: 3px solid var(--brand);
-    background: var(--brand-subtle);
-  }
-
-  .opt-indicator {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    border: 2px solid var(--text3);
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .opt-indicator-sq {
-    width: 18px; height: 18px;
-    border-radius: var(--r-sm);
-    border: 2px solid var(--text3);
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .option-card.selected .opt-indicator,
-  .option-card.selected .opt-indicator-sq {
-    border-color: var(--brand);
-    background: var(--brand);
-  }
-  .opt-text { font-size: 14px; font-weight: 500; color: var(--text1); }
-
-  /* ── Recall panel on intake screen ── */
-  .recall-panel {
-    margin-top: 32px;
-    padding: 20px;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .recall-panel-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text2);
-    margin-bottom: 12px;
-    letter-spacing: 0.04em;
-  }
-  .recall-row { display: flex; gap: 8px; }
-  .recall-input {
-    flex: 1;
-    padding: 10px 14px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text1);
-    font-family: var(--font);
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .recall-input:focus { border-color: var(--brand); }
-  .recall-input::placeholder { color: var(--text3); }
-  .recall-msg {
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--danger);
-  }
-  .recall-msg.ok { color: var(--success); }
+  /* ── Status pills (RAG+) ── */
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--r-pill);font-size:11px;font-family:var(--font-mono);font-weight:600;white-space:nowrap;border:1px solid transparent;}
+  .pill-met{background:var(--success-bg);color:var(--success);border-color:rgba(43,169,92,.3);}
+  .pill-partial{background:var(--amber-bg);color:var(--amber);border-color:rgba(245,158,11,.3);}
+  .pill-notmet{background:var(--danger-bg);color:var(--danger);border-color:rgba(211,58,97,.3);}
+  .pill-skipped{background:var(--grey-bg);color:var(--grey);border-color:rgba(107,114,128,.25);}
+  .pill-pass{background:var(--success-bg);color:var(--success);border-color:rgba(43,169,92,.3);font-size:13px;padding:5px 14px;}
+  .pill-conditional{background:var(--amber-bg);color:var(--amber);border-color:rgba(245,158,11,.3);font-size:13px;padding:5px 14px;}
+  .pill-notpassed{background:var(--danger-bg);color:var(--danger);border-color:rgba(211,58,97,.3);font-size:13px;padding:5px 14px;}
 
   /* ── Buttons ── */
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: var(--brand);
-    color: #fff;
-    border: none;
-    border-radius: var(--r-md);
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-    white-space: nowrap;
-  }
-  .btn-primary:hover { background: var(--brand-hover); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-
-  .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
-    background: transparent;
-    color: var(--text2);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
-    white-space: nowrap;
-  }
-  .btn-ghost:hover { border-color: var(--border2); color: var(--text1); background: var(--surface2); }
-
-  /* ── Loading ── */
-  .loading-wrap {
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 24px; padding: 20px;
-    background: var(--bg);
-  }
-  .loading-label {
-    font-size: 18px; font-weight: 600; color: var(--text1);
-  }
-  .loading-sub { font-size: 13px; color: var(--text3); font-family: var(--font-mono); }
-  .loading-track {
-    width: 280px; height: 3px;
-    background: var(--surface3);
-    border-radius: var(--r-pill);
-    overflow: hidden;
-  }
-  .loading-fill {
-    height: 100%;
-    background: var(--brand);
-    border-radius: var(--r-pill);
-    animation: loadFill 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
-  }
-  @keyframes loadFill { from { width: 0% } to { width: 100% } }
-
-  /* ── Output layout ── */
-  .output-wrap { background: var(--bg); min-height: 100vh; }
-  .output-layout {
-    display: flex;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  .sidenav {
-    width: 200px;
-    flex-shrink: 0;
-    padding: 36px 0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    border-right: 1px solid var(--border);
-  }
-  @media (max-width: 820px) { .sidenav { display: none; } }
-
-  .sidenav-logo {
-    font-size: 12px; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--brand);
-    padding: 0 12px;
-    margin-bottom: 28px;
-  }
-  .sidenav-link {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px;
-    border-radius: var(--r-md);
-    font-size: 13px; font-weight: 500;
-    color: var(--text2);
-    cursor: pointer;
-    text-decoration: none;
-    margin-bottom: 2px;
-    transition: color 0.15s, background 0.15s;
-  }
-  .sidenav-link:hover { color: var(--text1); background: var(--surface2); }
-  .sidenav-link.active { color: var(--brand); background: var(--brand-subtle); }
-
-  .output-main {
-    flex: 1; min-width: 0;
-    padding: 36px 0 80px 40px;
-  }
-  @media (max-width: 820px) { .output-main { padding: 24px 0 60px 0; } }
-
-  .output-topbar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-  .output-title {
-    font-size: 26px; font-weight: 700; color: var(--text1); line-height: 1.2;
-  }
-  .output-subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
-  .topbar-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
-
-  /* ── Sections ── */
-  .out-section { margin-bottom: 48px; animation: fadeUp 0.4s ease both; }
-  .section-eyebrow {
-    font-family: var(--font-mono);
-    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--brand); margin-bottom: 6px;
-  }
-  .section-heading {
-    font-size: 18px; font-weight: 700; color: var(--text1);
-    margin-bottom: 18px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:var(--r-md);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,box-shadow .15s,transform .1s,border-color .15s;white-space:nowrap;border:none;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary:hover{background:var(--brand-hover);box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--border2);color:var(--text1);background:var(--surface2);}
+  .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(211,58,97,.3);}
+  .btn-danger:hover{background:rgba(211,58,97,.2);}
+  .btn-sm{padding:7px 14px;font-size:13px;}
 
   /* ── Cards ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 22px 26px;
-  }
-  .card-accent {
-    background: var(--surface);
-    border: 1px solid var(--brand-border);
-    border-left: 3px solid var(--brand);
-    border-radius: var(--r-lg);
-    padding: 22px 26px;
-  }
-  .card-danger {
-    background: var(--danger-bg);
-    border: 1px solid rgba(211,58,97,0.3);
-    border-left: 3px solid var(--danger);
-    border-radius: var(--r-md);
-    padding: 16px 20px;
-  }
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 26px;}
+  .card-accent{background:var(--surface);border:1px solid var(--brand-border);border-left:3px solid var(--brand);border-radius:var(--r-lg);padding:22px 26px;}
+  .card-warn{background:var(--amber-bg);border:1px solid rgba(245,158,11,.3);border-left:3px solid var(--amber);border-radius:var(--r-md);padding:16px 20px;}
+  .card-danger{background:var(--danger-bg);border:1px solid rgba(211,58,97,.3);border-left:3px solid var(--danger);border-radius:var(--r-md);padding:16px 20px;}
+  .card-success{background:var(--success-bg);border:1px solid rgba(43,169,92,.3);border-left:3px solid var(--success);border-radius:var(--r-md);padding:16px 20px;}
 
-  .profile-text { font-size: 14px; line-height: 1.75; color: var(--text2); }
-  .profile-text strong { color: var(--text1); font-weight: 600; }
+  /* ── Text helpers ── */
+  .t1{color:var(--text1);} .t2{color:var(--text2);} .t3{color:var(--text3);}
+  .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);margin-bottom:6px;}
+  .section-title{font-size:18px;font-weight:700;color:var(--text1);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .divider{height:1px;background:var(--border);margin:36px 0;}
+  .body-text{font-size:14px;line-height:1.75;color:var(--text2);}
+  .body-text strong{color:var(--text1);font-weight:600;}
+
+  /* ── Inputs ── */
+  .field-input{width:100%;padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg);color:var(--text1);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:var(--brand);}
+  .field-input::placeholder{color:var(--text3);}
+  textarea.field-input{resize:vertical;min-height:72px;line-height:1.55;}
+
+  /* ── Recall panel ── */
+  .recall-panel{margin-top:28px;padding:18px 20px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface);}
+  .recall-panel-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px;}
+  .recall-row{display:flex;gap:8px;}
+  .recall-msg{margin-top:8px;font-size:12px;color:var(--danger);}
+  .recall-msg.ok{color:var(--success);}
+
+  /* ── Loading ── */
+  .loading-label{font-size:18px;font-weight:600;color:var(--text1);}
+  .loading-sub{font-size:12px;color:var(--text3);font-family:var(--font-mono);}
+  .loading-track{width:260px;height:3px;background:var(--surface3);border-radius:var(--r-pill);overflow:hidden;}
+  .loading-fill{height:100%;background:var(--brand);border-radius:var(--r-pill);animation:loadFill 1.2s cubic-bezier(.4,0,.2,1) forwards;}
+  @keyframes loadFill{from{width:0}to{width:100%}}
+
+  /* ── Check-in flow ── */
+  .week-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+  @media(max-width:480px){.week-selector{grid-template-columns:1fr;}}
+  .week-tile{padding:16px 18px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .15s,background .15s;}
+  .week-tile:hover{border-color:var(--border2);background:var(--surface2);}
+  .week-tile.selected{border-color:var(--brand);border-left:3px solid var(--brand);background:var(--brand-subtle);}
+  .week-tile-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin-bottom:4px;}
+  .week-tile-title{font-size:13px;font-weight:600;color:var(--text1);line-height:1.35;}
+  .week-tile-status{margin-top:6px;}
+  .criteria-row{display:flex;flex-direction:column;gap:10px;}
+  .crit-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;}
+  .crit-name{font-size:13.5px;font-weight:600;color:var(--text1);margin-bottom:10px;}
+  .status-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .status-opt{padding:5px 12px;border-radius:var(--r-pill);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-mono);}
+  .status-opt:hover{border-color:var(--border2);}
+  .status-opt.sel-met{background:var(--success-bg);color:var(--success);border-color:rgba(43,169,92,.5);}
+  .status-opt.sel-partial{background:var(--amber-bg);color:var(--amber);border-color:rgba(245,158,11,.5);}
+  .status-opt.sel-notmet{background:var(--danger-bg);color:var(--danger);border-color:rgba(211,58,97,.5);}
+  .status-opt.sel-skipped{background:var(--grey-bg);color:var(--grey);border-color:rgba(107,114,128,.35);}
+  .comment-toggle{font-size:11px;color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;transition:color .15s;}
+  .comment-toggle:hover{color:var(--text2);}
+
+  /* ── Output / SAD layout ── */
+  .output-wrap{background:var(--bg);min-height:100vh;}
+  .output-layout{display:flex;max-width:1100px;margin:0 auto;padding:0 24px;}
+  .sidenav{width:196px;flex-shrink:0;padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);}
+  @media(max-width:820px){.sidenav{display:none;}}
+  .sidenav-logo{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);padding:0 12px;margin-bottom:24px;}
+  .sidenav-link{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-md);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;text-decoration:none;margin-bottom:2px;transition:color .15s,background .15s;}
+  .sidenav-link:hover{color:var(--text1);background:var(--surface2);}
+  .sidenav-link.active{color:var(--brand);background:var(--brand-subtle);}
+  .output-main{flex:1;min-width:0;padding:32px 0 80px 36px;}
+  @media(max-width:820px){.output-main{padding:20px 0 60px;}}
+  .output-topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:36px;flex-wrap:wrap;}
+  .output-title{font-size:24px;font-weight:700;color:var(--text1);line-height:1.2;}
+  .output-subtitle{font-size:13px;color:var(--text2);margin-top:4px;}
+  .topbar-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+  .out-section{margin-bottom:44px;animation:fadeUp .4s ease both;}
 
   /* ── Week cards ── */
-  .weeks-grid { display: flex; flex-direction: column; gap: 16px; }
-  .week-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    transition: border-color 0.15s;
-  }
-  .week-card:hover { border-color: var(--border2); }
-  .week-header {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 20px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-  }
-  .week-badge {
-    font-family: var(--font-mono);
-    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--yellow-text);
-    background: var(--yellow);
-    padding: 2px 10px; border-radius: var(--r-pill);
-    font-weight: 600; flex-shrink: 0;
-  }
-  .week-title { font-size: 14px; font-weight: 600; color: var(--text1); }
-  .week-body { padding: 18px 20px; }
-  .week-tasks { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-  .week-task { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--text2); line-height: 1.55; }
-  .task-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); flex-shrink: 0; margin-top: 8px; }
+  .weeks-grid{display:flex;flex-direction:column;gap:14px;}
+  .week-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:border-color .15s;}
+  .week-card:hover{border-color:var(--border2);}
+  .week-header{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--surface2);border-bottom:1px solid var(--border);}
+  .week-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow-text);background:var(--yellow);padding:2px 10px;border-radius:var(--r-pill);font-weight:600;flex-shrink:0;}
+  .week-title-text{font-size:14px;font-weight:600;color:var(--text1);}
+  .week-body{padding:16px 18px;}
+  .week-tasks{list-style:none;display:flex;flex-direction:column;gap:9px;}
+  .week-task{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--text2);line-height:1.55;}
+  .task-dot{width:5px;height:5px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:8px;}
 
   /* ── Metrics table ── */
-  .metrics-wrap { border-radius: var(--r-lg); border: 1px solid var(--border); overflow-x: auto; }
-  .metrics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .metrics-table th {
-    font-family: var(--font-mono);
-    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--text3); background: var(--surface2);
-    padding: 10px 14px; text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  .metrics-table td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2); vertical-align: top; line-height: 1.5;
-  }
-  .metrics-table tr:last-child td { border-bottom: none; }
-  .metrics-table tr:nth-child(even) td { background: rgba(44,53,60,0.4); }
-  .metrics-table td:first-child { color: var(--text1); font-weight: 600; }
-  .pass-pill {
-    display: inline-block;
-    background: var(--success-bg); color: var(--success);
-    border: 1px solid rgba(43,169,92,0.3);
-    padding: 2px 8px; border-radius: var(--r-pill);
-    font-size: 11px; font-family: var(--font-mono); white-space: nowrap;
-  }
+  .metrics-wrap{border-radius:var(--r-lg);border:1px solid var(--border);overflow-x:auto;}
+  .metrics-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .metrics-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:var(--surface2);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+  .metrics-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;line-height:1.5;}
+  .metrics-table tr:last-child td{border-bottom:none;}
+  .metrics-table tr:nth-child(even) td{background:rgba(44,53,60,.35);}
+  .metrics-table td:first-child{color:var(--text1);font-weight:600;}
 
-  /* ── Red flags ── */
-  .red-flags { display: flex; flex-direction: column; gap: 14px; }
-  .flag-title {
-    font-size: 13.5px; font-weight: 600; color: var(--text1);
-    margin-bottom: 5px; display: flex; align-items: center; gap: 7px;
-  }
-  .flag-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
-  .flag-body strong { color: var(--text1); }
+  /* ── Save panel ── */
+  .save-panel{margin-top:44px;padding:22px 26px;border-radius:var(--r-lg);border:1px solid var(--brand-border);background:var(--brand-subtle);}
+  .save-panel-title{font-size:15px;font-weight:600;color:var(--text1);margin-bottom:4px;}
+  .save-panel-sub{font-size:13px;color:var(--text2);margin-bottom:14px;}
+  .save-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .save-feedback{margin-top:10px;font-size:12px;color:var(--success);display:flex;align-items:center;gap:5px;}
+  .save-feedback.err{color:var(--danger);}
 
-  /* ── Next step ── */
-  .next-step-cta { font-size: 16px; font-weight: 600; color: var(--text1); margin-bottom: 10px; }
-  .next-step-body { font-size: 14px; color: var(--text2); line-height: 1.7; }
-  .next-step-body strong { color: var(--text1); }
-
-  /* ── Email save panel ── */
-  .save-panel {
-    margin-top: 48px;
-    padding: 24px 28px;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--brand-border);
-    background: var(--brand-subtle);
-  }
-  .save-panel-title { font-size: 15px; font-weight: 600; color: var(--text1); margin-bottom: 4px; }
-  .save-panel-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
-  .save-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .save-input {
-    flex: 1; min-width: 200px;
-    padding: 10px 14px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text1);
-    font-family: var(--font); font-size: 14px;
-    outline: none; transition: border-color 0.15s;
-  }
-  .save-input:focus { border-color: var(--brand); }
-  .save-input::placeholder { color: var(--text3); }
-  .save-feedback {
-    margin-top: 10px; font-size: 12px; color: var(--success);
-    display: flex; align-items: center; gap: 5px;
-  }
-  .save-feedback.err { color: var(--danger); }
+  /* ── SAD / Evaluation Report ── */
+  .sad-wrap{background:var(--bg);min-height:100vh;}
+  .sad-cover{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;padding:60px;background:var(--bg);border-bottom:1px solid var(--border);}
+  @media(max-width:600px){.sad-cover{padding:32px 24px;}}
+  .sad-cover-logo{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);}
+  .sad-cover-title{font-size:36px;font-weight:700;color:var(--text1);line-height:1.2;margin-bottom:12px;}
+  @media(max-width:600px){.sad-cover-title{font-size:26px;}}
+  .sad-cover-sub{font-size:15px;color:var(--text2);}
+  .sad-cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px;}
+  @media(max-width:600px){.sad-cover-meta{grid-template-columns:1fr;}}
+  .sad-meta-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;}
+  .sad-meta-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;}
+  .sad-meta-value{font-size:14px;font-weight:600;color:var(--text1);}
+  .sad-verdict-block{display:flex;align-items:center;gap:16px;padding:22px 26px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface2);margin-top:32px;}
+  .sad-verdict-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+  .sad-verdict-value{font-size:22px;font-weight:700;}
+  .sad-body{max-width:860px;margin:0 auto;padding:48px 32px 80px;}
+  @media(max-width:600px){.sad-body{padding:28px 16px 60px;}}
+  .sad-section{margin-bottom:44px;}
+  .sad-section-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+  .sad-section-num{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);}
+  .sad-section-title{font-size:17px;font-weight:700;color:var(--text1);}
+  .scorecard-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .scorecard-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:var(--surface2);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .scorecard-table td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2);}
+  .scorecard-table tr:last-child td{border-bottom:none;}
+  .scorecard-table td:first-child{color:var(--text1);font-weight:600;}
+  .next-steps-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .next-steps-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);background:var(--surface2);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .next-steps-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;}
+  .next-steps-table tr:last-child td{border-bottom:none;}
+  .editable-field{background:transparent;border:none;border-bottom:1px dashed var(--border2);color:var(--text1);font-family:var(--font);font-size:13px;padding:2px 4px;width:100%;outline:none;transition:border-color .15s;}
+  .editable-field:focus{border-bottom-color:var(--brand);}
 
   /* ── Toast ── */
-  .toast {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--r-pill);
-    padding: 10px 20px;
-    font-size: 13px; font-weight: 500; color: var(--text1);
-    box-shadow: var(--shadow-lg);
-    animation: toastIn 0.2s ease;
-    z-index: 999; white-space: nowrap;
-  }
-  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-pill);padding:10px 20px;font-size:13px;font-weight:500;color:var(--text1);box-shadow:var(--shadow-lg);animation:fadeUp .2s ease;z-index:999;white-space:nowrap;}
 
-  /* ── Print ── */
+  /* ── Print / PDF ── */
   @media print {
-    .sidenav, .topbar-actions, .save-panel, .toast, .btn-ghost, .btn-primary { display: none !important; }
-    body { background: #fff !important; color: #111 !important; }
-    .output-layout { display: block !important; padding: 0 !important; }
-    .output-main { padding: 0 !important; }
-    .card, .card-accent, .week-card, .card-danger {
-      background: #f7f8fa !important; border-color: #ddd !important;
-      break-inside: avoid;
-    }
-    .week-header { background: #eef0f3 !important; }
-    .section-eyebrow, .q-label { color: #5c3abf !important; }
-    .section-heading, .output-title, .week-title, .flag-title, .next-step-cta,
-    .profile-text strong, .metrics-table td:first-child { color: #111 !important; }
-    .profile-text, .week-task, .flag-body, .next-step-body, .metrics-table td { color: #333 !important; }
-    .metrics-table th { background: #eef0f3 !important; color: #555 !important; }
-    .week-badge { color: #171B1F !important; background: #F2DD06 !important; }
-    .print-header { display: block !important; text-align: center; padding: 16px 0 10px; border-bottom: 2px solid #5c3abf; margin-bottom: 20px; }
-    .print-footer { display: block !important; position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #888; padding: 6px; border-top: 1px solid #ccc; }
+    .sidenav,.topbar-actions,.save-panel,.toast,.sad-topbar,.no-print{display:none!important;}
+    body{background:#fff!important;color:#111!important;}
+    .output-layout,.sad-body{display:block!important;max-width:100%!important;padding:0!important;}
+    .output-main{padding:0!important;}
+    .card,.card-accent,.week-card,.card-danger,.card-warn,.card-success,.sad-meta-item{background:#f7f8fa!important;border-color:#ddd!important;break-inside:avoid;}
+    .week-header,.metrics-table th,.scorecard-table th,.next-steps-table th{background:#eef0f3!important;}
+    .eyebrow,.q-eyebrow,.sad-section-num,.sad-meta-label,.week-badge{color:#5c3abf!important;}
+    .section-title,.sad-section-title,.sad-cover-title,.output-title,.week-title-text,.t1,strong{color:#111!important;}
+    .body-text,.t2,.week-task,.metrics-table td,.scorecard-table td,.next-steps-table td{color:#333!important;}
+    .metrics-table th,.scorecard-table th,.next-steps-table th{color:#555!important;}
+    .week-badge{color:#171B1F!important;background:#F2DD06!important;}
+    .sad-cover{min-height:auto!important;padding:32px 40px!important;border-bottom:2px solid #5c3abf!important;}
+    .sad-cover-logo{color:#5c3abf!important;}
+    .sad-verdict-block{background:#f0ecfd!important;border-color:#b89ef8!important;}
+    .print-footer{display:block!important;position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:#888;padding:5px;border-top:1px solid #ccc;background:#fff;}
+    .out-section,.sad-section{page-break-inside:avoid;}
   }
-  .print-header { display: none; }
-  .print-footer { display: none; }
+  .print-footer{display:none;}
 `;
-
-
 /* ─── INTAKE QUESTIONS ───────────────────────────────────────────────────── */
 const QUESTIONS = [
   {
@@ -1168,434 +903,1168 @@ function buildNextStep(answers) {
     body: `You do not need to run this evaluation alone. Share this guide with the one or two people on your team who will be most affected by the outcome, and align on who owns each week's testing tasks. <strong>Your Solutions Consultant is your most valuable resource during this trial</strong> — book a 30-minute check-in at the end of Week 2 and bring your results. They have seen hundreds of evaluations in environments like yours and can tell you quickly whether what you are seeing is normal or worth escalating.`,
   };
 }
+/* ─── localStorage ───────────────────────────────────────────────────────── */
+const SC_EMAIL = 'francesca.gutierrez@goto.com';
+const STORE = 'rg_v2_';
 
-/* ─── localStorage HELPERS ───────────────────────────────────────────────── */
-const STORAGE_KEY = 'rg_saved_';
-
-function saveGuide(email, answers) {
-  const key = STORAGE_KEY + email.trim().toLowerCase();
-  localStorage.setItem(key, JSON.stringify({ answers, savedAt: Date.now() }));
+function saveRecord(email, record) {
+  localStorage.setItem(STORE + email.trim().toLowerCase(), JSON.stringify(record));
+}
+function loadRecord(email) {
+  const r = localStorage.getItem(STORE + email.trim().toLowerCase());
+  try { return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function newRecord(answers) {
+  return { answers, savedAt: Date.now(), context: {}, checkIns: [] };
+}
+function upsertCheckIn(record, checkIn) {
+  const idx = record.checkIns.findIndex(c => c.week === checkIn.week);
+  if (idx >= 0) record.checkIns[idx] = checkIn;
+  else record.checkIns.push(checkIn);
+  return record;
 }
 
-function loadGuide(email) {
-  const key = STORAGE_KEY + email.trim().toLowerCase();
-  const raw = localStorage.getItem(key);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+/* ─── CHECK-IN QUESTION BUILDER ─────────────────────────────────────────── */
+function buildCheckInCriteria(answers, week) {
+  const weeks = buildWeeklyPlan(answers);
+  const weekData = weeks[week - 1];
+  if (!weekData) return [];
+  // Turn each task into a scoreable criterion
+  return weekData.tasks.map((task, i) => ({
+    id: `w${week}_${i}`,
+    name: task,
+    status: null,  // 'met'|'partial'|'notmet'|'skipped'
+    comment: '',
+  }));
 }
 
-/* ─── SUB-COMPONENTS ─────────────────────────────────────────────────────── */
-
-function HtmlBody({ html }) {
-  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+function computeVerdict(checkIns, answers) {
+  if (!checkIns || checkIns.length === 0) return null;
+  // Flatten all criteria across check-ins
+  const allCriteria = checkIns.flatMap(c => c.criteria || []);
+  if (allCriteria.length === 0) return null;
+  const scored = allCriteria.filter(c => c.status && c.status !== 'skipped');
+  if (scored.length === 0) return null;
+  const notMet = scored.filter(c => c.status === 'notmet');
+  const partial = scored.filter(c => c.status === 'partial');
+  const met = scored.filter(c => c.status === 'met');
+  if (notMet.length > scored.length * 0.25) return 'notpassed';
+  if (partial.length > 0 || notMet.length > 0) return 'conditional';
+  return 'pass';
 }
 
-function ProgressDots({ total, current }) {
-  return (
-    <div className="progress-dots">
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className={`progress-dot ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`} />
-      ))}
-    </div>
-  );
+function verdictDisplay(v) {
+  if (v === 'pass')        return { label: 'Trial Passed',       cls: 'pill-pass',        color: 'var(--success)' };
+  if (v === 'conditional') return { label: 'Conditional Pass',   cls: 'pill-conditional', color: 'var(--amber)'   };
+  if (v === 'notpassed')   return { label: 'Not Passed',         cls: 'pill-notpassed',   color: 'var(--danger)'  };
+  return                          { label: 'In Progress',        cls: 'pill-skipped',     color: 'var(--grey)'    };
 }
 
-function RecallPanel() {
-  const [email, setEmail] = useState('');
-  const [msg, setMsg] = useState('');
-  const [msgType, setMsgType] = useState('err');
+const WEEK_LABELS = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'End of Trial'];
+const STATUS_OPTIONS = [
+  { value: 'met',     label: '✓ Met',          cls: 'sel-met'     },
+  { value: 'partial', label: '~ Partial',       cls: 'sel-partial' },
+  { value: 'notmet',  label: '✕ Not Met',       cls: 'sel-notmet'  },
+  { value: 'skipped', label: '— Not Tested',    cls: 'sel-skipped' },
+];
 
-  function handleRecall() {
-    const saved = loadGuide(email);
-    if (!saved) {
-      setMsg('No saved guide found for that email.');
-      setMsgType('err');
-      return;
-    }
-    // Dispatch a custom event the App listens for
-    window.dispatchEvent(new CustomEvent('rg:recall', { detail: saved.answers }));
+/* ─── CHECK-IN FLOW COMPONENT ───────────────────────────────────────────── */
+function CheckInFlow({ record, onSave, onCancel }) {
+  const [step, setStep] = useState('week');       // 'week'|'scope'|'criteria'|'done'
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [scopeChanged, setScopeChanged] = useState(null);
+  const [updatedContext, setUpdatedContext] = useState('');
+  const [criteria, setCriteria] = useState([]);
+
+  const weeks = buildWeeklyPlan(record.answers);
+
+  function handleWeekSelect(w) {
+    setSelectedWeek(w);
+    setStep('scope');
   }
 
-  return (
-    <div className="recall-panel">
-      <div className="recall-panel-title">Returning? Recall your saved guide.</div>
-      <div className="recall-row">
-        <input
-          className="recall-input"
-          type="email"
-          placeholder="your@email.com"
-          value={email}
-          onChange={e => { setEmail(e.target.value); setMsg(''); }}
-          onKeyDown={e => e.key === 'Enter' && handleRecall()}
-        />
-        <button className="btn-primary" onClick={handleRecall} disabled={!email.trim()}>
-          Recall <Icon name="RefreshCw" size={14} />
-        </button>
-      </div>
-      {msg && <div className={`recall-msg ${msgType === 'ok' ? 'ok' : ''}`}>{msg}</div>}
-    </div>
-  );
-}
-
-function IntakeQuestion({ question, answers, onAnswer, onContinue }) {
-  const selected = answers[question.id];
-  const isMulti = question.multi;
-
-  function handleSelect(optId) {
-    if (isMulti) {
-      const cur = selected || [];
-      const next = cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur, optId];
-      onAnswer(question.id, next);
+  function handleScopeAnswer(changed) {
+    setScopeChanged(changed);
+    const base = buildCheckInCriteria(record.answers, selectedWeek);
+    // Merge any prior check-in data for this week
+    const prior = record.checkIns.find(c => c.week === selectedWeek);
+    if (prior) {
+      const merged = base.map(b => {
+        const p = prior.criteria.find(x => x.id === b.id);
+        return p ? { ...b, status: p.status, comment: p.comment } : b;
+      });
+      setCriteria(merged);
     } else {
-      onAnswer(question.id, optId);
+      setCriteria(base);
     }
+    setStep('criteria');
   }
 
-  const hasSelection = isMulti ? (selected && selected.length > 0) : !!selected;
+  function updateCriterion(id, field, value) {
+    setCriteria(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  }
 
-  return (
-    <div className="question-block">
-      <div className="q-label">{question.label}</div>
-      <div className="q-text">{question.text}</div>
-      {question.options.map(opt => {
-        const isSel = isMulti ? (selected || []).includes(opt.id) : selected === opt.id;
-        return (
-          <div key={opt.id} className={`option-card ${isSel ? 'selected' : ''}`} onClick={() => handleSelect(opt.id)}>
-            <div className={isMulti ? 'opt-indicator-sq' : 'opt-indicator'}>
-              {isSel && <Icon name="Check" size={11} color="#fff" strokeWidth={3} />}
-            </div>
-            <span className="opt-text">{opt.label}</span>
+  function handleFinish() {
+    const checkIn = {
+      week: selectedWeek,
+      completedAt: Date.now(),
+      scopeChanged,
+      updatedContext: scopeChanged ? updatedContext : '',
+      criteria,
+    };
+    onSave(checkIn);
+    setStep('done');
+  }
+
+  const weekTitle = selectedWeek ? (selectedWeek === 5 ? 'End of Trial Review' : weeks[selectedWeek - 1]?.title || '') : '';
+  const allScored = criteria.length > 0 && criteria.every(c => c.status);
+
+  if (step === 'done') {
+    return (
+      <div className="full-center">
+        <div className="inner fade-up" style={{ textAlign: 'center' }}>
+          <Icon name="Award" size={40} color="var(--brand)" style={{ marginBottom: 16 }} />
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Check-in saved</div>
+          <div className="body-text" style={{ marginBottom: 24 }}>Your Week {selectedWeek === 5 ? 'end-of-trial' : selectedWeek} results have been recorded.</div>
+          <button className="btn btn-primary" onClick={onCancel}>Back to your guide</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'week') {
+    const existingWeeks = new Set(record.checkIns.map(c => c.week));
+    return (
+      <div className="full-center">
+        <div className="inner fade-up">
+          <div className="brand-mark">GoTo Resolve</div>
+          <div className="q-eyebrow">Trial Check-In</div>
+          <div className="q-text">Which week are you checking in on?</div>
+          <div className="q-sub">Select the week you just completed. You can update a previous check-in at any time.</div>
+          <div className="week-selector">
+            {[1, 2, 3, 4, 5].map(w => {
+              const done = existingWeeks.has(w);
+              const wLabel = w === 5 ? 'End of Trial' : `Week ${w}`;
+              const wTitle = w === 5 ? 'Final Evaluation Review' : (weeks[w - 1]?.title || '');
+              const prior = record.checkIns.find(c => c.week === w);
+              const verdict = prior ? computeCheckInVerdict(prior.criteria) : null;
+              return (
+                <div key={w} className={`week-tile ${selectedWeek === w ? 'selected' : ''}`} onClick={() => handleWeekSelect(w)}>
+                  <div className="week-tile-label">{wLabel}</div>
+                  <div className="week-tile-title">{wTitle}</div>
+                  {done && verdict && (
+                    <div className="week-tile-status" style={{ marginTop: 6 }}>
+                      <StatusPill status={verdict} />
+                    </div>
+                  )}
+                  {done && !verdict && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>✓ Previously submitted</div>}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-      {isMulti && (
-        <button className="btn-primary" disabled={!hasSelection} onClick={onContinue} style={{ marginTop: 18 }}>
-          Continue <Icon name="ChevronRight" size={15} />
-        </button>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} style={{ marginTop: 20 }}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'scope') {
+    return (
+      <div className="full-center">
+        <div className="inner fade-up">
+          <div className="brand-mark">GoTo Resolve</div>
+          <div className="q-eyebrow">Check-In · {selectedWeek === 5 ? 'End of Trial' : `Week ${selectedWeek}`}</div>
+          <div className="q-text">Has anything changed from your original intake?</div>
+          <div className="q-sub">Your original goal was: <strong style={{ color: 'var(--text1)' }}>{getPainLabel(record.answers.painPoint)}</strong>. Your success definition was: <strong style={{ color: 'var(--text1)' }}>{getSuccessLabel(record.answers.successDef)}</strong>.</div>
+          {[
+            { val: false, label: 'No — everything is the same, continue with my original plan' },
+            { val: true,  label: 'Yes — my priorities or environment have changed' },
+          ].map(opt => (
+            <div key={String(opt.val)} className={`opt-card ${scopeChanged === opt.val ? 'selected' : ''}`} onClick={() => setScopeChanged(opt.val)}>
+              <div className="opt-radio">{scopeChanged === opt.val && <Icon name="Check" size={11} color="#fff" strokeWidth={3} />}</div>
+              <span className="opt-label">{opt.label}</span>
+            </div>
+          ))}
+          {scopeChanged && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>Briefly describe what changed:</div>
+              <textarea className="field-input" rows={3} placeholder="e.g. We expanded the pilot group, added MDM to scope, changed the primary evaluator..." value={updatedContext} onChange={e => setUpdatedContext(e.target.value)} />
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setStep('week')}>Back</button>
+            <button className="btn btn-primary" disabled={scopeChanged === null} onClick={() => handleScopeAnswer(scopeChanged)}>
+              Continue <Icon name="ChevronRight" size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'criteria') {
+    return (
+      <div className="full-center" style={{ justifyContent: 'flex-start', paddingTop: 48 }}>
+        <div className="inner fade-up">
+          <div className="brand-mark">GoTo Resolve</div>
+          <div className="q-eyebrow">Check-In · {selectedWeek === 5 ? 'End of Trial' : `Week ${selectedWeek}`}</div>
+          <div className="q-text">{weekTitle}</div>
+          <div className="q-sub">Rate each task. Add a comment if anything needs context — optional but helpful.</div>
+          <div className="criteria-row">
+            {criteria.map(c => (
+              <CriterionCard key={c.id} criterion={c} onChange={(field, val) => updateCriterion(c.id, field, val)} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setStep('scope')}>Back</button>
+            <button className="btn btn-primary" disabled={!allScored} onClick={handleFinish}>
+              Save Check-In <Icon name="Save" size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function CriterionCard({ criterion, onChange }) {
+  const [showComment, setShowComment] = useState(!!criterion.comment);
+  return (
+    <div className="crit-card">
+      <div className="crit-name">{criterion.name}</div>
+      <div className="status-pills">
+        {STATUS_OPTIONS.map(opt => (
+          <button key={opt.value} className={`status-opt ${criterion.status === opt.value ? opt.cls : ''}`}
+            onClick={() => onChange('status', opt.value)}>{opt.label}</button>
+        ))}
+      </div>
+      <div className="comment-toggle" onClick={() => setShowComment(v => !v)}>
+        <Icon name="Edit3" size={11} /> {showComment ? 'Hide comment' : 'Add comment'}
+      </div>
+      {showComment && (
+        <input className="field-input" style={{ marginTop: 4 }} type="text" placeholder="Optional note..." value={criterion.comment} onChange={e => onChange('comment', e.target.value)} />
       )}
     </div>
   );
 }
 
-function LoadingView() {
+function StatusPill({ status }) {
+  const map = { met: 'pill-met', partial: 'pill-partial', notmet: 'pill-notmet', skipped: 'pill-skipped' };
+  const lbl = { met: 'Met', partial: 'Partial', notmet: 'Not Met', skipped: 'Not Tested' };
+  return <span className={`pill ${map[status] || 'pill-skipped'}`}>{lbl[status] || status}</span>;
+}
+
+function computeCheckInVerdict(criteria) {
+  if (!criteria || criteria.length === 0) return 'skipped';
+  const scored = criteria.filter(c => c.status && c.status !== 'skipped');
+  if (scored.length === 0) return 'skipped';
+  if (scored.some(c => c.status === 'notmet')) return 'partial';
+  if (scored.some(c => c.status === 'partial')) return 'partial';
+  return 'met';
+}
+
+/* ─── SAD / EVALUATION REPORT ───────────────────────────────────────────── */
+function SADView({ record, onBack, onCheckIn }) {
+  const { answers, checkIns = [], context = {} } = record;
+  const weeks = buildWeeklyPlan(answers);
+  const verdict = computeVerdict(checkIns, answers);
+  const vd = verdictDisplay(verdict);
+
+  // Editable next-steps rows
+  const [nextSteps, setNextSteps] = useState([
+    { action: 'Security / compliance review',        owner: '',  date: '', notes: '' },
+    { action: 'Procurement / legal review',          owner: '',  date: '', notes: '' },
+    { action: 'Reference customer call',             owner: 'GoTo SC', date: '', notes: '' },
+    { action: 'Commercial proposal review',          owner: 'GoTo AE', date: '', notes: '' },
+    { action: 'Final purchase decision',             owner: '',  date: '', notes: '' },
+    { action: 'Proposed contract start date',        owner: '',  date: '', notes: '' },
+  ]);
+
+  function updateStep(i, field, val) {
+    setNextSteps(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+  }
+
+  function buildEmailBody() {
+    const lines = [];
+    lines.push(`GoTo Resolve Trial Evaluation Report`);
+    lines.push(`Prepared: ${new Date().toLocaleDateString()}`);
+    lines.push(`Role: ${getRoleLabel(answers.role)} | Environment: ${getEnvLabel(answers.envSize)}`);
+    lines.push(`Primary goal: ${getPainLabel(answers.painPoint)}`);
+    lines.push(`Success definition: ${getSuccessLabel(answers.successDef)}`);
+    lines.push(`Overall verdict: ${vd.label}`);
+    lines.push(``);
+    checkIns.forEach(ci => {
+      lines.push(`=== ${ci.week === 5 ? 'End of Trial' : 'Week ' + ci.week} ===`);
+      if (ci.scopeChanged && ci.updatedContext) lines.push(`Scope update: ${ci.updatedContext}`);
+      (ci.criteria || []).forEach(c => {
+        lines.push(`  [${(c.status || 'skipped').toUpperCase()}] ${c.name}${c.comment ? ' — ' + c.comment : ''}`);
+      });
+      lines.push(``);
+    });
+    lines.push(`Next steps:`);
+    nextSteps.forEach(s => {
+      if (s.action) lines.push(`  • ${s.action} | Owner: ${s.owner || 'TBD'} | Date: ${s.date || 'TBD'}`);
+    });
+    return encodeURIComponent(lines.join('\n'));
+  }
+
+  function handleEmail() {
+    const subject = encodeURIComponent(`GoTo Resolve Trial Evaluation Report — ${getRoleLabel(answers.role)}`);
+    const body = buildEmailBody();
+    window.location.href = `mailto:${SC_EMAIL}?subject=${subject}&body=${body}`;
+  }
+
+  const completedWeekNums = checkIns.map(c => c.week);
+  const allWeeksDone = completedWeekNums.length >= 4;
+
   return (
-    <div className="loading-wrap">
-      <div className="loading-label">Building your evaluation guide…</div>
-      <div className="loading-track"><div className="loading-fill" /></div>
-      <div className="loading-sub">Personalizing for your environment</div>
+    <div className="sad-wrap">
+      <div className="print-footer">
+        GoTo Resolve Trial Evaluation Report | Confidential | francesca.gutierrez@goto.com
+      </div>
+
+      {/* Top bar — hidden on print */}
+      <div className="no-print" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon name="ChevronRight" size={13} style={{ transform: 'rotate(180deg)' }} /> Back to Guide</button>
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-ghost btn-sm" onClick={onCheckIn}><Icon name="ClipboardList" size={13} /> Add Check-In</button>
+        <button className="btn btn-ghost btn-sm" onClick={handleEmail}><Icon name="Mail" size={13} /> Email to SC</button>
+        <button className="btn btn-primary btn-sm" onClick={() => window.print()}><Icon name="Download" size={13} /> Export PDF</button>
+      </div>
+
+      {/* Cover */}
+      <div className="sad-cover">
+        <div>
+          <div className="sad-cover-logo">GoTo Resolve</div>
+        </div>
+        <div>
+          <div className="sad-cover-title">Trial Evaluation Report</div>
+          <div className="sad-cover-sub">Prepared {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          <div className="sad-cover-meta">
+            <div className="sad-meta-item">
+              <div className="sad-meta-label">Evaluator Role</div>
+              <div className="sad-meta-value">{getRoleLabel(answers.role)}</div>
+            </div>
+            <div className="sad-meta-item">
+              <div className="sad-meta-label">Environment</div>
+              <div className="sad-meta-value">{getEnvLabel(answers.envSize)}</div>
+            </div>
+            <div className="sad-meta-item">
+              <div className="sad-meta-label">Primary Goal</div>
+              <div className="sad-meta-value">{getPainLabel(answers.painPoint)}</div>
+            </div>
+            <div className="sad-meta-item">
+              <div className="sad-meta-label">Check-Ins Completed</div>
+              <div className="sad-meta-value">{checkIns.length} of 5</div>
+            </div>
+          </div>
+          <div className="sad-verdict-block">
+            <div>
+              <div className="sad-verdict-label">Overall Trial Verdict</div>
+              <div className="sad-verdict-value" style={{ color: vd.color }}>{vd.label}</div>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              <span className={`pill ${vd.cls}`} style={{ fontSize: 13, padding: '6px 16px' }}>{vd.label}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+          CONFIDENTIAL — GoTo Solutions Consulting · {SC_EMAIL}
+        </div>
+      </div>
+
+      <div className="sad-body">
+
+        {/* S1 — Executive Summary */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 01</span>
+            <span className="sad-section-title">Executive Summary</span>
+          </div>
+          <div className="card-accent">
+            <p className="body-text">
+              This report summarizes the GoTo Resolve trial evaluation conducted by a <strong>{getRoleLabel(answers.role)}</strong> managing <strong>{getEnvLabel(answers.envSize)}</strong>.
+              The evaluation focused on <strong>{getPainLabel(answers.painPoint)}</strong>.
+              Success was defined as: <strong>{getSuccessLabel(answers.successDef)}</strong>.
+              The primary concern entering the trial was <strong>{getConcernLabel(answers.biggestConcern)}</strong>.
+            </p>
+            <p className="body-text" style={{ marginTop: 12 }}>
+              {checkIns.length === 0 && 'No check-ins have been submitted yet. Complete weekly check-ins to build the full evaluation record.'}
+              {checkIns.length > 0 && `${checkIns.length} check-in${checkIns.length > 1 ? 's' : ''} completed. Overall verdict: `}
+              {checkIns.length > 0 && <strong style={{ color: vd.color }}>{vd.label}</strong>}
+              {checkIns.length > 0 && '.'}
+            </p>
+            {context.scopeChanged && context.updatedContext && (
+              <p className="body-text" style={{ marginTop: 12 }}>
+                <strong>Scope update noted:</strong> {context.updatedContext}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* S2 — Evaluation Profile */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 02</span>
+            <span className="sad-section-title">Evaluation Profile &amp; Objectives</span>
+          </div>
+          <div className="card">
+            <p className="body-text">{buildProfileSummary(answers)}</p>
+            {checkIns.some(c => c.scopeChanged) && (
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Scope Changes Noted During Trial</div>
+                {checkIns.filter(c => c.scopeChanged && c.updatedContext).map((c, i) => (
+                  <div key={i} className="card-warn" style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--amber)', fontFamily: 'var(--font-mono)', marginRight: 8 }}>{c.week === 5 ? 'END OF TRIAL' : `WEEK ${c.week}`}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text2)' }}>{c.updatedContext}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* S3 — Success Criteria Scorecard */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 03</span>
+            <span className="sad-section-title">Success Criteria Scorecard</span>
+          </div>
+          {checkIns.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text3)' }}>
+              No check-ins submitted yet. Weekly check-ins will populate this scorecard.
+            </div>
+          ) : (
+            <div style={{ borderRadius: 'var(--r-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <table className="scorecard-table">
+                <thead>
+                  <tr>
+                    <th>Week</th>
+                    <th>Task / Criterion</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {checkIns.map(ci =>
+                    (ci.criteria || []).map((c, i) => (
+                      <tr key={c.id}>
+                        {i === 0 && (
+                          <td rowSpan={ci.criteria.length} style={{ verticalAlign: 'top', paddingTop: 14 }}>
+                            <span className="week-badge" style={{ fontSize: 10 }}>{ci.week === 5 ? 'End' : `Wk ${ci.week}`}</span>
+                          </td>
+                        )}
+                        <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{c.name}</td>
+                        <td><StatusPill status={c.status || 'skipped'} /></td>
+                        <td style={{ color: 'var(--text2)', fontSize: 12 }}>{c.comment || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* S4 — Week-by-Week Results */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 04</span>
+            <span className="sad-section-title">Week-by-Week Results</span>
+          </div>
+          {checkIns.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text3)' }}>No check-ins submitted yet.</div>
+          ) : (
+            <div className="weeks-grid">
+              {checkIns.map(ci => {
+                const wv = computeCheckInVerdict(ci.criteria);
+                const wLabel = ci.week === 5 ? 'End of Trial Review' : (weeks[ci.week - 1]?.title || `Week ${ci.week}`);
+                const metCount = (ci.criteria || []).filter(c => c.status === 'met').length;
+                const total = (ci.criteria || []).length;
+                return (
+                  <div key={ci.week} className="week-card">
+                    <div className="week-header">
+                      <span className="week-badge">{ci.week === 5 ? 'End' : `Week ${ci.week}`}</span>
+                      <span className="week-title-text">{wLabel}</span>
+                      <span style={{ marginLeft: 'auto' }}><StatusPill status={wv} /></span>
+                    </div>
+                    <div className="week-body">
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10 }}>
+                        {metCount} of {total} tasks met · completed {new Date(ci.completedAt).toLocaleDateString()}
+                        {ci.scopeChanged && <span style={{ marginLeft: 8, color: 'var(--amber)' }}>· Scope updated</span>}
+                      </div>
+                      <ul className="week-tasks">
+                        {(ci.criteria || []).map(c => (
+                          <li key={c.id} className="week-task">
+                            <span className="task-dot" style={{ background: c.status === 'met' ? 'var(--success)' : c.status === 'notmet' ? 'var(--danger)' : c.status === 'partial' ? 'var(--amber)' : 'var(--grey)' }} />
+                            <span>{c.name}</span>
+                            <span style={{ marginLeft: 'auto', flexShrink: 0 }}><StatusPill status={c.status || 'skipped'} /></span>
+                          </li>
+                        ))}
+                      </ul>
+                      {ci.criteria.some(c => c.comment) && (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                          {ci.criteria.filter(c => c.comment).map(c => (
+                            <div key={c.id} style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 4 }}>
+                              <span style={{ color: 'var(--text3)' }}>Note:</span> {c.comment}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* S5 — Gaps & Open Items */}
+        {checkIns.some(ci => (ci.criteria || []).some(c => c.status === 'notmet' || c.status === 'partial')) && (
+          <div className="sad-section">
+            <div className="sad-section-header">
+              <span className="sad-section-num">Section 05</span>
+              <span className="sad-section-title">Gaps &amp; Open Items</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {checkIns.flatMap(ci =>
+                (ci.criteria || []).filter(c => c.status === 'notmet' || c.status === 'partial').map(c => (
+                  <div key={c.id} className={c.status === 'notmet' ? 'card-danger' : 'card-warn'}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <StatusPill status={c.status} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{c.name}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{ci.week === 5 ? 'END OF TRIAL' : `WEEK ${ci.week}`}</span>
+                    </div>
+                    {c.comment && <p style={{ fontSize: 13, color: 'var(--text2)' }}>{c.comment}</p>}
+                    {!c.comment && <p style={{ fontSize: 13, color: 'var(--text3)', fontStyle: 'italic' }}>No notes provided. Share details with your SC for remediation guidance.</p>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* S6 — Recommended Next Steps (editable) */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 06</span>
+            <span className="sad-section-title">Recommended Next Steps</span>
+          </div>
+          <p className="body-text" style={{ marginBottom: 16 }}>Fill in owners and target dates. This table is included in your PDF export and email to your SC.</p>
+          <div style={{ borderRadius: 'var(--r-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <table className="next-steps-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Owner</th>
+                  <th>Target Date</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nextSteps.map((s, i) => (
+                  <tr key={i}>
+                    <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{s.action}</td>
+                    <td><input className="editable-field" placeholder="Name / team" value={s.owner} onChange={e => updateStep(i, 'owner', e.target.value)} /></td>
+                    <td><input className="editable-field" placeholder="MM/DD" value={s.date} onChange={e => updateStep(i, 'date', e.target.value)} /></td>
+                    <td><input className="editable-field" placeholder="—" value={s.notes} onChange={e => updateStep(i, 'notes', e.target.value)} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* S7 — Contact */}
+        <div className="sad-section">
+          <div className="sad-section-header">
+            <span className="sad-section-num">Section 07</span>
+            <span className="sad-section-title">Your GoTo Team</span>
+          </div>
+          <div className="card">
+            <p className="body-text">Your Solutions Consultant is your primary resource throughout this evaluation and the commercial process. Reach out with questions about gaps, roadmap items, or next steps before making your final decision.</p>
+            <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--surface2)', borderRadius: 'var(--r-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icon name="Mail" size={15} color="var(--brand)" />
+              <a href={`mailto:${SC_EMAIL}`} style={{ color: 'var(--brand)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>{SC_EMAIL}</a>
+            </div>
+          </div>
+        </div>
+
+        {/* Email CTA */}
+        <div className="no-print" style={{ marginTop: 48, padding: '24px 28px', borderRadius: 'var(--r-lg)', border: '1px solid var(--brand-border)', background: 'var(--brand-subtle)' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Send this report to your SC</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
+            Clicking the button below opens your email client with this report pre-filled. If you have a direct SC, add their address to the To field. Otherwise it will go to the GoTo Solutions team.
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={handleEmail}><Icon name="Mail" size={14} /> Email Report to SC</button>
+            <button className="btn btn-ghost" onClick={() => window.print()}><Icon name="Download" size={14} /> Export PDF</button>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
 
-function SideNav({ onNav, active }) {
-  const links = [
-    { id: 'profile',    label: 'Evaluation Profile',  icon: 'FileText'    },
-    { id: 'firstvalue', label: 'First Value Target',   icon: 'Target'      },
-    { id: 'testplan',   label: 'Test Plan',            icon: 'Calendar'    },
-    { id: 'metrics',    label: 'Success Metrics',      icon: 'BarChart3'   },
-    { id: 'redflags',   label: 'Red Flags',            icon: 'AlertTriangle'},
-    { id: 'nextstep',   label: 'Next Step',            icon: 'ArrowRight'  },
+/* ─── OUTPUT / GUIDE VIEW ───────────────────────────────────────────────── */
+function OutputView({ record, onCheckIn, onViewSAD, onSave, onReset }) {
+  const { answers, checkIns = [] } = record;
+  const weeks = buildWeeklyPlan(answers);
+  const [saveEmail, setSaveEmail] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState('');
+  const [activeSection, setActiveSection] = useState('overview');
+  const verdict = computeVerdict(checkIns, answers);
+  const vd = verdictDisplay(verdict);
+
+  const SECTIONS = [
+    { id: 'overview',  label: 'Overview',       icon: 'LayoutDashboard' },
+    { id: 'week1',     label: 'Week 1',          icon: 'Calendar' },
+    { id: 'week2',     label: 'Week 2',          icon: 'Calendar' },
+    { id: 'week3',     label: 'Week 3',          icon: 'Calendar' },
+    { id: 'week4',     label: 'Week 4',          icon: 'Calendar' },
+    { id: 'endtrial',  label: 'End of Trial',    icon: 'Award' },
+    { id: 'resources', label: 'Resources',       icon: 'BookOpen' },
   ];
-  return (
-    <nav className="sidenav">
-      <div className="sidenav-logo">GoTo Resolve</div>
-      {links.map(l => (
-        <a key={l.id} href={`#${l.id}`} className={`sidenav-link ${active === l.id ? 'active' : ''}`} onClick={() => onNav(l.id)}>
-          <Icon name={l.icon} size={13} /> {l.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function WeekCard({ week }) {
-  return (
-    <div className="week-card">
-      <div className="week-header">
-        <span className="week-badge">{week.label}</span>
-        <span className="week-title">{week.title}</span>
-      </div>
-      <div className="week-body">
-        <ul className="week-tasks">
-          {week.tasks.map((t, i) => (
-            <li key={i} className="week-task">
-              <span className="task-dot" />
-              <span>{t}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function MetricsTable({ metrics }) {
-  return (
-    <div className="metrics-wrap">
-      <table className="metrics-table">
-        <thead>
-          <tr>
-            <th>Metric</th>
-            <th>How to Measure</th>
-            <th>Passing Result</th>
-            <th>Why It Matters</th>
-          </tr>
-        </thead>
-        <tbody>
-          {metrics.map((m, i) => (
-            <tr key={i}>
-              <td>{m.name}</td>
-              <td>{m.how}</td>
-              <td><span className="pass-pill">{m.target}</span></td>
-              <td>{m.why}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Toast({ msg }) {
-  return <div className="toast">{msg}</div>;
-}
-
-function SavePanel({ answers }) {
-  const [email, setEmail] = useState('');
-  const [feedback, setFeedback] = useState('');
-  const [isErr, setIsErr] = useState(false);
 
   function handleSave() {
-    const trimmed = email.trim();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setFeedback('Please enter a valid email address.');
-      setIsErr(true);
+    if (!saveEmail.trim() || !saveEmail.includes('@')) {
+      setSaveFeedback('err:Please enter a valid email address.');
       return;
     }
-    saveGuide(trimmed, answers);
-    setFeedback('Guide saved! Enter this email on the start screen to recall it anytime.');
-    setIsErr(false);
+    saveRecord(saveEmail, record);
+    setSaveFeedback('ok:Saved! Use this email to recall your guide later.');
   }
 
-  return (
-    <div className="save-panel">
-      <div className="save-panel-title">Save your guide</div>
-      <div className="save-panel-sub">Enter your email to save this guide. You can recall it anytime from the start screen — even if you close the browser.</div>
-      <div className="save-row">
-        <input
-          className="save-input"
-          type="email"
-          placeholder="your@email.com"
-          value={email}
-          onChange={e => { setEmail(e.target.value); setFeedback(''); }}
-          onKeyDown={e => e.key === 'Enter' && handleSave()}
-        />
-        <button className="btn-primary" onClick={handleSave} disabled={!email.trim()}>
-          <Icon name="Save" size={14} /> Save Guide
-        </button>
-      </div>
-      {feedback && <div className={`save-feedback ${isErr ? 'err' : ''}`}>
-        {!isErr && <Icon name="Check" size={13} />} {feedback}
-      </div>}
-    </div>
-  );
-}
-
-function OutputView({ answers, onReset }) {
-  const [active, setActive] = useState('profile');
-  const [toast, setToast] = useState('');
-
-  const profile  = buildProfileSummary(answers);
-  const firstVal = buildFirstValue(answers);
-  const weeks    = buildWeeklyPlan(answers);
-  const metrics  = buildMetrics(answers);
-  const flags    = buildRedFlags(answers);
-  const nextStep = buildNextStep(answers);
-
-  function showToast(msg) {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  }
-
-  function handleExport() {
-    window.print();
-  }
+  const completedWeekNums = new Set(checkIns.map(c => c.week));
 
   return (
     <div className="output-wrap">
-      <div className="print-header">
-        <strong style={{ fontSize: 16 }}>GoTo Resolve — Trial Evaluation Guide</strong>
-      </div>
-      <div className="print-footer">
-        GoTo Resolve Trial Evaluation Guide | Prepared by GoTo Solutions Consulting | Confidential
-      </div>
-
       <div className="output-layout">
-        <SideNav active={active} onNav={setActive} />
+        {/* Side nav */}
+        <nav className="sidenav">
+          <div className="sidenav-logo">GoTo Resolve</div>
+          {SECTIONS.map(s => (
+            <a key={s.id} className={`sidenav-link ${activeSection === s.id ? 'active' : ''}`}
+              onClick={() => setActiveSection(s.id)}>
+              <Icon name={s.icon} size={14} />
+              {s.label}
+              {(s.id.startsWith('week') || s.id === 'endtrial') && (() => {
+                const wNum = s.id === 'endtrial' ? 5 : parseInt(s.id.replace('week',''));
+                if (completedWeekNums.has(wNum)) {
+                  const ci = checkIns.find(c => c.week === wNum);
+                  const wv = computeCheckInVerdict(ci?.criteria);
+                  return <span style={{ marginLeft: 'auto' }}><StatusPill status={wv} /></span>;
+                }
+                return null;
+              })()}
+            </a>
+          ))}
+          <div style={{ height: 1, background: 'var(--border)', margin: '16px 12px' }} />
+          <a className="sidenav-link" onClick={onCheckIn}>
+            <Icon name="ClipboardList" size={14} /> Check In
+          </a>
+          <a className="sidenav-link" onClick={onViewSAD}>
+            <Icon name="FileText" size={14} /> Evaluation Report
+          </a>
+        </nav>
+
+        {/* Main content */}
         <main className="output-main">
+          {/* Top bar */}
           <div className="output-topbar">
             <div>
-              <div className="output-title">Your GoTo Resolve Evaluation Guide</div>
-              <div className="output-subtitle">{getRoleLabel(answers.role)} · {getEnvLabel(answers.envSize)}</div>
+              <div className="output-title">Your 30-Day Trial Guide</div>
+              <div className="output-subtitle">
+                {getRoleLabel(answers.role)} · {getEnvLabel(answers.envSize)} · {getPainLabel(answers.painPoint)}
+              </div>
             </div>
             <div className="topbar-actions">
-              <button className="btn-ghost" onClick={onReset}>
-                <Icon name="X" size={13} /> Start Over
+              <button className="btn btn-ghost btn-sm" onClick={onCheckIn}>
+                <Icon name="ClipboardList" size={13} /> Check In
               </button>
-              <button className="btn-primary" onClick={handleExport}>
-                <Icon name="Download" size={14} /> Export PDF
+              {checkIns.length > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={onViewSAD}>
+                  <Icon name="FileText" size={13} /> Evaluation Report
+                  <span className={`pill ${vd.cls}`} style={{ marginLeft: 4, fontSize: 10, padding: '2px 8px' }}>{vd.label}</span>
+                </button>
+              )}
+              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
+                <Icon name="Download" size={13} /> Export PDF
               </button>
             </div>
           </div>
 
-          <section id="profile" className="out-section">
-            <div className="section-eyebrow">Section 01</div>
-            <div className="section-heading"><Icon name="FileText" size={17} /> Your Evaluation Profile</div>
-            <div className="card"><p className="profile-text">{profile}</p></div>
-          </section>
-          <div className="divider" />
+          {/* Check-in progress banner */}
+          {checkIns.length > 0 && (
+            <div className="card-accent" style={{ marginBottom: 32, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Trial Progress</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)' }}>{checkIns.length} of 5 check-ins completed · Overall: <strong style={{ color: vd.color }}>{vd.label}</strong></div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                {[1,2,3,4,5].map(w => {
+                  const done = completedWeekNums.has(w);
+                  const ci = checkIns.find(c => c.week === w);
+                  const wv = ci ? computeCheckInVerdict(ci.criteria) : null;
+                  const dotColor = done ? (wv === 'met' ? 'var(--success)' : wv === 'partial' ? 'var(--amber)' : 'var(--danger)') : 'var(--surface3)';
+                  return (
+                    <div key={w} title={w === 5 ? 'End of Trial' : `Week ${w}`}
+                      style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, transition: 'background .3s' }} />
+                  );
+                })}
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={onViewSAD}>View Report</button>
+            </div>
+          )}
 
-          <section id="firstvalue" className="out-section">
-            <div className="section-eyebrow">Section 02</div>
-            <div className="section-heading"><Icon name="Target" size={17} /> Your First Value Target</div>
-            <div className="card-accent"><p className="profile-text">{firstVal}</p></div>
-          </section>
-          <div className="divider" />
+          {/* Section: Overview */}
+          {activeSection === 'overview' && (
+            <div className="out-section">
+              <div className="eyebrow">Evaluation Overview</div>
+              <div className="section-title"><Icon name="LayoutDashboard" size={18} /> Your Trial at a Glance</div>
+              <div className="card" style={{ marginBottom: 20 }}>
+                <p className="body-text">{buildProfileSummary(answers)}</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 28 }}>
+                {[
+                  { label: 'Primary Goal',       value: getPainLabel(answers.painPoint) },
+                  { label: 'Success Definition',  value: getSuccessLabel(answers.successDef) },
+                  { label: 'Top Concern',         value: getConcernLabel(answers.biggestConcern) },
+                  { label: 'Environment',         value: getEnvLabel(answers.envSize) },
+                ].map(m => (
+                  <div key={m.label} className="card">
+                    <div className="eyebrow" style={{ marginBottom: 6 }}>{m.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)' }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="eyebrow" style={{ marginBottom: 10 }}>30-Day Roadmap</div>
+              <div className="weeks-grid">
+                {weeks.map((w, idx) => {
+                  const wNum = idx + 1;
+                  const ci = checkIns.find(c => c.week === wNum);
+                  const wv = ci ? computeCheckInVerdict(ci.criteria) : null;
+                  return (
+                    <div key={wNum} className="week-card" onClick={() => setActiveSection(`week${wNum}`)}>
+                      <div className="week-header">
+                        <span className="week-badge">Week {wNum}</span>
+                        <span className="week-title-text">{w.title}</span>
+                        <span style={{ marginLeft: 'auto' }}>
+                          {wv ? <StatusPill status={wv} /> : <span style={{ fontSize: 11, color: 'var(--text3)' }}>Not started</span>}
+                        </span>
+                      </div>
+                      <div className="week-body">
+                        <ul className="week-tasks">
+                          {w.tasks.slice(0, 3).map((t, i) => (
+                            <li key={i} className="week-task"><span className="task-dot" /><span>{t}</span></li>
+                          ))}
+                          {w.tasks.length > 3 && <li className="week-task" style={{ color: 'var(--text3)', fontStyle: 'italic' }}>+{w.tasks.length - 3} more tasks</li>}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-          <section id="testplan" className="out-section">
-            <div className="section-eyebrow">Section 03</div>
-            <div className="section-heading"><Icon name="Calendar" size={17} /> Your Personalized 30-Day Test Plan</div>
-            <div className="weeks-grid">{weeks.map((w, i) => <WeekCard key={i} week={w} />)}</div>
-          </section>
-          <div className="divider" />
+          {/* Sections: Week 1–4 */}
+          {[1,2,3,4].map(wNum => activeSection === `week${wNum}` && (
+            <div key={wNum} className="out-section">
+              <div className="eyebrow">Week {wNum}</div>
+              <div className="section-title"><Icon name="Calendar" size={18} /> {weeks[wNum-1]?.title}</div>
+              {(() => {
+                const ci = checkIns.find(c => c.week === wNum);
+                const wv = ci ? computeCheckInVerdict(ci.criteria) : null;
+                return (
+                  <>
+                    {ci ? (
+                      <div className="card-accent" style={{ marginBottom: 20 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                          <StatusPill status={wv} />
+                          <span style={{ fontSize: 13, color: 'var(--text2)' }}>Check-in completed {new Date(ci.completedAt).toLocaleDateString()}</span>
+                          {ci.scopeChanged && <span style={{ color: 'var(--amber)', fontSize: 12 }}>· Scope updated</span>}
+                        </div>
+                        {ci.scopeChanged && ci.updatedContext && (
+                          <p style={{ fontSize: 13, color: 'var(--text2)' }}><strong>Scope note:</strong> {ci.updatedContext}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="card-warn" style={{ marginBottom: 20 }}>
+                        <span style={{ fontSize: 13, color: 'var(--amber)' }}>No check-in yet for this week. </span>
+                        <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={onCheckIn}>Add Check-In</button>
+                      </div>
+                    )}
+                    <div className="weeks-grid">
+                      <div className="week-card">
+                        <div className="week-header">
+                          <span className="week-badge">Week {wNum}</span>
+                          <span className="week-title-text">{weeks[wNum-1]?.title}</span>
+                        </div>
+                        <div className="week-body">
+                          <ul className="week-tasks">
+                            {(weeks[wNum-1]?.tasks || []).map((t, i) => {
+                              const criterion = ci?.criteria?.find(c => c.id === `w${wNum}_${i}`);
+                              return (
+                                <li key={i} className="week-task">
+                                  <span className="task-dot" style={{ background: criterion ? (criterion.status === 'met' ? 'var(--success)' : criterion.status === 'notmet' ? 'var(--danger)' : criterion.status === 'partial' ? 'var(--amber)' : 'var(--grey)') : 'var(--brand)' }} />
+                                  <span>{t}</span>
+                                  {criterion && <span style={{ marginLeft: 'auto', flexShrink: 0 }}><StatusPill status={criterion.status || 'skipped'} /></span>}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {ci?.criteria?.some(c => c.comment) && (
+                            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8, fontFamily: 'var(--font-mono)' }}>Notes</div>
+                              {ci.criteria.filter(c => c.comment).map(c => (
+                                <div key={c.id} style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 4 }}>
+                                  <span style={{ color: 'var(--text3)' }}>Note:</span> {c.comment}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {weeks[wNum-1]?.metrics && weeks[wNum-1].metrics.length > 0 && (
+                      <>
+                        <div className="eyebrow" style={{ marginTop: 32, marginBottom: 10 }}>Success Metrics</div>
+                        <div className="metrics-wrap">
+                          <table className="metrics-table">
+                            <thead><tr><th>Metric</th><th>Target</th><th>How to Measure</th></tr></thead>
+                            <tbody>
+                              {weeks[wNum-1].metrics.map((m, i) => (
+                                <tr key={i}><td>{m.metric}</td><td>{m.target}</td><td>{m.measure}</td></tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ))}
 
-          <section id="metrics" className="out-section">
-            <div className="section-eyebrow">Section 04</div>
-            <div className="section-heading"><Icon name="BarChart3" size={17} /> Success Metrics</div>
-            <MetricsTable metrics={metrics} />
-          </section>
-          <div className="divider" />
+          {/* Section: End of Trial */}
+          {activeSection === 'endtrial' && (
+            <div className="out-section">
+              <div className="eyebrow">End of Trial</div>
+              <div className="section-title"><Icon name="Award" size={18} /> Final Evaluation Review</div>
+              {(() => {
+                const ci = checkIns.find(c => c.week === 5);
+                const wv = ci ? computeCheckInVerdict(ci.criteria) : null;
+                return (
+                  <>
+                    {ci ? (
+                      <div className="card-accent" style={{ marginBottom: 20 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                          <StatusPill status={wv} />
+                          <span style={{ fontSize: 13, color: 'var(--text2)' }}>Final review completed {new Date(ci.completedAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="card-warn" style={{ marginBottom: 20 }}>
+                        <span style={{ fontSize: 13, color: 'var(--amber)' }}>Final check-in not yet submitted. </span>
+                        <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={onCheckIn}>Submit Final Review</button>
+                      </div>
+                    )}
+                    <div className="card" style={{ marginBottom: 20 }}>
+                      <div className="eyebrow" style={{ marginBottom: 8 }}>Overall Verdict</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span className={`pill ${vd.cls}`}>{vd.label}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text2)' }}>{checkIns.length} of 5 check-ins completed</span>
+                      </div>
+                    </div>
+                    {checkIns.length > 0 && (
+                      <button className="btn btn-primary" onClick={onViewSAD}>
+                        <Icon name="FileText" size={14} /> View Full Evaluation Report
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
 
-          <section id="redflags" className="out-section">
-            <div className="section-eyebrow">Section 05</div>
-            <div className="section-heading"><Icon name="AlertTriangle" size={17} /> Red Flags to Watch For</div>
-            <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.65 }}>
-              These indicate genuine product fit issues — not learning curve friction. Knowing the difference saves you from both a false positive and a false negative.
-            </p>
-            <div className="red-flags">
-              {flags.map((f, i) => (
-                <div key={i} className="card-danger">
-                  <div className="flag-title"><Icon name="AlertTriangle" size={14} color="var(--danger)" /> {f.title}</div>
-                  <div className="flag-body"><HtmlBody html={f.body} /></div>
+          {/* Section: Resources */}
+          {activeSection === 'resources' && (
+            <div className="out-section">
+              <div className="eyebrow">Resources</div>
+              <div className="section-title"><Icon name="BookOpen" size={18} /> Getting Help</div>
+              <div className="card" style={{ marginBottom: 14 }}>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>Your GoTo Team</div>
+                <p className="body-text">Your Solutions Consultant is your primary resource. Reach out with questions about the product, proof-of-concept progress, or commercial terms.</p>
+                <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="Mail" size={14} color="var(--brand)" />
+                  <a href={`mailto:${SC_EMAIL}`} style={{ color: 'var(--brand)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>{SC_EMAIL}</a>
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
-          <div className="divider" />
+          )}
 
-          <section id="nextstep" className="out-section">
-            <div className="section-eyebrow">Section 06</div>
-            <div className="section-heading"><Icon name="ArrowRight" size={17} /> Your Next Step</div>
-            <div className="card-accent">
-              <div className="next-step-cta">{nextStep.cta}</div>
-              <div className="next-step-body"><HtmlBody html={nextStep.body} /></div>
+          {/* Save panel */}
+          <div className="save-panel no-print" style={{ marginTop: 44 }}>
+            <div className="save-panel-title">Save your progress</div>
+            <div className="save-panel-sub">Enter your email to save this guide and retrieve it next time.</div>
+            <div className="save-row">
+              <input className="field-input" type="email" placeholder="your@email.com" value={saveEmail} onChange={e => setSaveEmail(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
+              <button className="btn btn-primary" onClick={handleSave}><Icon name="Save" size={14} /> Save</button>
             </div>
-          </section>
+            {saveFeedback && (
+              <div className={`save-feedback ${saveFeedback.startsWith('err') ? 'err' : ''}`}>
+                {saveFeedback.startsWith('err:') ? saveFeedback.slice(4) : <><Icon name="Check" size={13} /> {saveFeedback.slice(3)}</>}
+              </div>
+            )}
+          </div>
 
-          <SavePanel answers={answers} />
+          {/* Reset */}
+          <div className="no-print" style={{ marginTop: 24, textAlign: 'center' }}>
+            <button className="btn btn-ghost btn-sm" onClick={onReset}>Start a new evaluation</button>
+          </div>
         </main>
       </div>
-      {toast && <Toast msg={toast} />}
     </div>
   );
 }
 
-/* ─── MAIN APP ───────────────────────────────────────────────────────────── */
-
-function ResolveTrialGuide() {
-  const [phase, setPhase] = useState('intake');
+/* ─── INTAKE FLOW ────────────────────────────────────────────────────────── */
+function IntakeFlow({ onComplete }) {
   const [qIndex, setQIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const autoAdvanceTimer = useRef(null);
   const qIndexRef = useRef(0);
+  const [answers, setAnswers] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [selectedMulti, setSelectedMulti] = useState([]);
+  const [recallEmail, setRecallEmail] = useState('');
+  const [recallMsg, setRecallMsg] = useState('');
 
   useEffect(() => { qIndexRef.current = qIndex; }, [qIndex]);
 
-  useEffect(() => {
-    // Inject styles
-    if (!document.getElementById('rg-styles')) {
-      const el = document.createElement('style');
-      el.id = 'rg-styles';
-      el.textContent = GLOBAL_CSS;
-      document.head.appendChild(el);
-    }
-    // Listen for recall events from RecallPanel
-    function onRecall(e) {
-      setAnswers(e.detail);
-      setPhase('loading');
-      setTimeout(() => setPhase('output'), 1400);
-    }
-    window.addEventListener('rg:recall', onRecall);
-    return () => {
-      window.removeEventListener('rg:recall', onRecall);
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-    };
-  }, []);
+  const q = QUESTIONS[qIndex];
 
-  const totalQ = QUESTIONS.length;
-  const currentQ = QUESTIONS[qIndex];
-
-  function advance(idx) {
-    if (idx < totalQ - 1) {
-      setQIndex(idx + 1);
+  function advance(ans) {
+    const captured = qIndexRef.current;
+    const nextAnswers = { ...answers, [q.id]: ans };
+    setAnswers(nextAnswers);
+    setSelected(null);
+    setSelectedMulti([]);
+    if (captured >= QUESTIONS.length - 1) {
+      setTimeout(() => onComplete(nextAnswers), 320);
     } else {
-      setPhase('loading');
-      setTimeout(() => setPhase('output'), 1400);
+      setTimeout(() => setQIndex(captured + 1), 320);
     }
   }
 
-  function handleAnswer(qId, value) {
-    const updated = { ...answers, [qId]: value };
-    setAnswers(updated);
-    if (!currentQ.multi) {
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-      const captured = qIndexRef.current;
-      autoAdvanceTimer.current = setTimeout(() => advance(captured), 400);
-    }
+  function handleSingleSelect(id) {
+    setSelected(id);
+    setTimeout(() => advance(id), 260);
   }
 
-  function handleContinue() { advance(qIndexRef.current); }
-
-  function handleReset() {
-    setAnswers({});
-    setQIndex(0);
-    qIndexRef.current = 0;
-    setPhase('intake');
+  function handleMultiToggle(id) {
+    setSelectedMulti(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
   }
 
-  if (phase === 'loading') return <LoadingView />;
-  if (phase === 'output')  return <OutputView answers={answers} onReset={handleReset} />;
+  function handleRecall() {
+    if (!recallEmail.trim()) { setRecallMsg('Enter your email above.'); return; }
+    const rec = loadRecord(recallEmail);
+    if (!rec) { setRecallMsg('No saved record found for that email.'); return; }
+    onComplete(rec.answers, rec);
+  }
 
   return (
-    <div className="intake-wrap">
-      <div className="intake-inner">
-        <div className="intake-logo">GoTo Resolve</div>
-        <ProgressDots total={totalQ} current={qIndex} />
-        <IntakeQuestion
-          key={currentQ.id}
-          question={currentQ}
-          answers={answers}
-          onAnswer={handleAnswer}
-          onContinue={handleContinue}
-        />
-        {qIndex === 0 && <RecallPanel />}
+    <div className="full-center">
+      <div className="inner fade-up">
+        <div className="brand-mark">GoTo Resolve</div>
+        <div className="progress-dots">
+          {QUESTIONS.map((_, i) => (
+            <div key={i} className={`pdot ${i < qIndex ? 'done' : i === qIndex ? 'active' : ''}`} />
+          ))}
+        </div>
+        <div className="q-eyebrow">{q.label || `Question ${qIndex + 1} of ${QUESTIONS.length}`}</div>
+        <div className="q-text">{q.text}</div>
+
+        {!q.multi && q.options.map(opt => (
+          <div key={opt.id} className={`opt-card ${selected === opt.id ? 'selected' : ''}`}
+            onClick={() => handleSingleSelect(opt.id)}>
+            <div className="opt-radio">{selected === opt.id && <Icon name="Check" size={11} color="#fff" strokeWidth={3} />}</div>
+            <span className="opt-label">{opt.label}</span>
+          </div>
+        ))}
+
+        {q.multi && (
+          <>
+            {q.options.map(opt => (
+              <div key={opt.id} className={`opt-card ${selectedMulti.includes(opt.id) ? 'selected' : ''}`}
+                onClick={() => handleMultiToggle(opt.id)}>
+                <div className="opt-check">{selectedMulti.includes(opt.id) && <Icon name="Check" size={11} color="#fff" strokeWidth={3} />}</div>
+                <span className="opt-label">{opt.label}</span>
+              </div>
+            ))}
+            <button className="btn btn-primary" style={{ marginTop: 16 }}
+              disabled={selectedMulti.length === 0}
+              onClick={() => advance(selectedMulti)}>
+              Continue <Icon name="ChevronRight" size={15} />
+            </button>
+          </>
+        )}
+
+        {qIndex === 0 && (
+          <div className="recall-panel">
+            <div className="recall-panel-title">Returning? Recall your previous guide.</div>
+            <div className="recall-row">
+              <input className="field-input" type="email" placeholder="your@email.com"
+                value={recallEmail} onChange={e => { setRecallEmail(e.target.value); setRecallMsg(''); }} />
+              <button className="btn btn-ghost btn-sm" onClick={handleRecall}>Load</button>
+            </div>
+            {recallMsg && <div className={`recall-msg ${recallMsg.startsWith('No saved') ? '' : 'ok'}`}>{recallMsg}</div>}
+          </div>
+        )}
+
+        {qIndex > 0 && (
+          <button className="btn btn-ghost btn-sm" style={{ marginTop: 20 }}
+            onClick={() => { setQIndex(i => i - 1); setSelected(null); setSelectedMulti([]); }}>
+            <Icon name="ChevronRight" size={13} style={{ transform: 'rotate(180deg)' }} /> Back
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(ResolveTrialGuide));
+/* ─── LOADING SCREEN ─────────────────────────────────────────────────────── */
+function LoadingScreen({ onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 1400);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="full-center">
+      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <div className="brand-mark">GoTo Resolve</div>
+        <div className="loading-label">Building your evaluation guide…</div>
+        <div className="loading-sub">Personalizing to your environment</div>
+        <div className="loading-track"><div className="loading-fill" /></div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ROOT APP ───────────────────────────────────────────────────────────── */
+function ResolveTrialGuide() {
+  const [phase, setPhase] = useState('intake');   // intake|loading|output|checkin|checkin_loading|sad
+  const [record, setRecord] = useState(null);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2800);
+  }
+
+  function handleIntakeComplete(answers, existingRecord) {
+    if (existingRecord) {
+      setRecord(existingRecord);
+      setPhase('output');
+    } else {
+      setRecord(newRecord(answers));
+      setPhase('loading');
+    }
+  }
+
+  function handleLoadingDone() {
+    setPhase('output');
+  }
+
+  function handleCheckIn() {
+    setPhase('checkin');
+  }
+
+  function handleCheckInSave(checkIn) {
+    setRecord(prev => {
+      const updated = upsertCheckIn({ ...prev, checkIns: [...(prev.checkIns || [])] }, checkIn);
+      // Persist if we have a saved email (best-effort)
+      try {
+        const keys = Object.keys(localStorage).filter(k => k.startsWith(STORE));
+        if (keys.length > 0) {
+          // Update the most recently saved key
+          const latest = keys.reduce((a, b) => {
+            try {
+              const ra = JSON.parse(localStorage.getItem(a));
+              const rb = JSON.parse(localStorage.getItem(b));
+              return (rb?.savedAt || 0) > (ra?.savedAt || 0) ? b : a;
+            } catch { return a; }
+          });
+          const savedRec = JSON.parse(localStorage.getItem(latest));
+          if (savedRec && JSON.stringify(savedRec.answers) === JSON.stringify(updated.answers)) {
+            localStorage.setItem(latest, JSON.stringify({ ...updated, savedAt: Date.now() }));
+          }
+        }
+      } catch (_) {}
+      return updated;
+    });
+    showToast('Check-in saved!');
+    setPhase('sad');
+  }
+
+  function handleCheckInCancel() {
+    setPhase(record?.checkIns?.length > 0 ? 'sad' : 'output');
+  }
+
+  function handleViewSAD() {
+    setPhase('sad');
+  }
+
+  function handleBackFromSAD() {
+    setPhase('output');
+  }
+
+  function handleReset() {
+    setRecord(null);
+    setPhase('intake');
+  }
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
+      {phase === 'intake' && (
+        <IntakeFlow onComplete={handleIntakeComplete} />
+      )}
+      {phase === 'loading' && (
+        <LoadingScreen onDone={handleLoadingDone} />
+      )}
+      {phase === 'output' && record && (
+        <OutputView
+          record={record}
+          onCheckIn={handleCheckIn}
+          onViewSAD={handleViewSAD}
+          onReset={handleReset}
+        />
+      )}
+      {phase === 'checkin' && record && (
+        <CheckInFlow
+          record={record}
+          onSave={handleCheckInSave}
+          onCancel={handleCheckInCancel}
+        />
+      )}
+      {phase === 'sad' && record && (
+        <SADView
+          record={record}
+          onBack={handleBackFromSAD}
+          onCheckIn={handleCheckIn}
+        />
+      )}
+      {toast && <div className="toast">{toast}</div>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ResolveTrialGuide />);
+
   </script>
 </body>
 </html>
