@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoTo Resolve — Trial Success Guide</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>html,body,#root{height:100%;margin:0;padding:0;}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef } = React;
+
+/* ─── INLINE SVG ICONS (no external dependency) ─────────────────────────── */
+const ICONS = {
+  Check:         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>,
+  ChevronRight:  <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/>,
+  Download:      <><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 20h16"/></>,
+  FileText:      <><path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline strokeLinecap="round" strokeLinejoin="round" points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>,
+  Target:        <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+  Calendar:      <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+  BarChart3:     <><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></>,
+  AlertTriangle: <><path strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+  ArrowRight:    <><line x1="5" y1="12" x2="19" y2="12"/><polyline strokeLinecap="round" strokeLinejoin="round" points="12 5 19 12 12 19"/></>,
+  Star:          <polygon strokeLinecap="round" strokeLinejoin="round" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+  TrendingUp:    <><polyline strokeLinecap="round" strokeLinejoin="round" points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline strokeLinecap="round" strokeLinejoin="round" points="17 6 23 6 23 12"/></>,
+};
+
+function Icon({ name, size = 16, color = 'currentColor', strokeWidth = 2, style }) {
+  const paths = ICONS[name];
+  if (!paths) return null;
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size} height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+    >
+      {paths}
+    </svg>
+  );
+}
+
+/* ─── STYLES ─────────────────────────────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand-yellow: #FFD800;
+    --brand-navy: #1A1A2E;
+    --brand-blue-dark: #1A3C6B;
+    --brand-blue-mid: #2563B0;
+    --brand-blue-light: #D6E4F7;
+    --brand-orange: #E8610A;
+    --surface-dark: #111C2B;
+    --surface-card: #162032;
+    --surface-elevated: #1E2D42;
+    --text-primary: #E8EDF4;
+    --text-secondary: #8BA4C0;
+    --text-muted: #4A6080;
+    --border-subtle: rgba(37,99,176,0.25);
+    --border-active: rgba(37,99,176,0.6);
+    --success: #22C55E;
+    --warning: #FFD800;
+    --danger: #E8610A;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 { font-family: 'Sora', sans-serif; }
+
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* ── Intake ── */
+  .intake-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .intake-inner { width: 100%; max-width: 680px; }
+
+  .progress-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 48px;
+  }
+
+  .progress-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .progress-dot.done { background: var(--brand-yellow); }
+  .progress-dot.active { background: var(--brand-yellow); transform: scale(1.35); }
+
+  .question-block { animation: fadeSlideIn 0.38s ease both; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand-yellow);
+    margin-bottom: 10px;
+  }
+
+  .q-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 28px;
+    line-height: 1.35;
+  }
+
+  .option-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    user-select: none;
+  }
+  .option-card:hover {
+    border-color: var(--border-active);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .option-card.selected {
+    border-color: var(--brand-yellow);
+    border-left: 3px solid var(--brand-yellow);
+    background: rgba(255,216,0,0.06);
+  }
+
+  .option-check {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--text-muted);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .option-card.selected .option-check {
+    border-color: var(--brand-yellow);
+    background: var(--brand-yellow);
+  }
+
+  .option-check-box {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    border: 2px solid var(--text-muted);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .option-card.selected .option-check-box {
+    border-color: var(--brand-yellow);
+    background: var(--brand-yellow);
+  }
+
+  .option-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .continue-btn {
+    margin-top: 20px;
+    padding: 13px 32px;
+    background: var(--brand-yellow);
+    color: var(--brand-navy);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .continue-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .continue-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── Loading ── */
+  .loading-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 20px;
+  }
+
+  .loading-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .loading-bar-track {
+    width: 320px;
+    height: 4px;
+    background: var(--surface-elevated);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .loading-bar-fill {
+    height: 100%;
+    background: var(--brand-yellow);
+    border-radius: 2px;
+    animation: loadFill 1.2s ease forwards;
+  }
+  @keyframes loadFill {
+    from { width: 0%; }
+    to   { width: 100%; }
+  }
+
+  /* ── Output ── */
+  .output-layout {
+    display: flex;
+    min-height: 100vh;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .output-sidenav {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 40px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 860px) { .output-sidenav { display: none; } }
+
+  .sidenav-logo {
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand-yellow);
+    margin-bottom: 32px;
+    letter-spacing: 0.04em;
+  }
+
+  .sidenav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: color 0.2s, background 0.2s;
+    text-decoration: none;
+  }
+  .sidenav-link:hover { color: var(--text-primary); background: var(--surface-card); }
+  .sidenav-link.active { color: var(--brand-yellow); background: rgba(255,216,0,0.06); }
+
+  .output-main {
+    flex: 1;
+    min-width: 0;
+    padding: 40px 0 80px 40px;
+  }
+
+  @media (max-width: 860px) { .output-main { padding: 24px 0 60px 0; } }
+
+  .output-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    gap: 16px;
+  }
+
+  .output-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .output-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .export-btn {
+    padding: 11px 22px;
+    background: var(--brand-yellow);
+    color: var(--brand-navy);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .export-btn:hover { opacity: 0.88; }
+
+  /* ── Output Sections ── */
+  .out-section {
+    margin-bottom: 48px;
+    animation: fadeSlideIn 0.45s ease both;
+  }
+
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand-yellow);
+    margin-bottom: 8px;
+  }
+
+  .section-heading {
+    font-family: 'Sora', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-heading svg { color: var(--brand-blue-mid); flex-shrink: 0; }
+
+  .divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 40px 0;
+  }
+
+  /* ── Profile Card ── */
+  .profile-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 24px 28px;
+    line-height: 1.75;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+  .profile-card strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ── First Value Block ── */
+  .first-value-block {
+    background: linear-gradient(135deg, rgba(26,60,107,0.4) 0%, rgba(30,45,66,0.6) 100%);
+    border: 1px solid var(--border-active);
+    border-left: 3px solid var(--brand-yellow);
+    border-radius: 10px;
+    padding: 24px 28px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+  }
+  .first-value-block strong { color: var(--text-primary); }
+
+  /* ── Week Cards ── */
+  .weeks-grid { display: flex; flex-direction: column; gap: 20px; }
+
+  .week-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .week-card:hover { border-color: var(--border-active); }
+
+  .week-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    background: var(--surface-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .week-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brand-navy);
+    background: var(--brand-yellow);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .week-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .week-body { padding: 20px 22px; }
+
+  .week-tasks { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+  .week-task {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .task-bullet {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--brand-blue-mid);
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+
+  /* ── Metrics Table ── */
+  .metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  .metrics-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-elevated);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .metrics-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .metrics-table tr:nth-child(even) td { background: rgba(30,45,66,0.3); }
+
+  .metrics-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+  .pass-pill {
+    display: inline-block;
+    background: rgba(34,197,94,0.12);
+    color: var(--success);
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ── Red Flags ── */
+  .red-flags { display: flex; flex-direction: column; gap: 16px; }
+
+  .red-flag-card {
+    background: rgba(232,97,10,0.06);
+    border: 1px solid rgba(232,97,10,0.25);
+    border-left: 3px solid var(--brand-orange);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+
+  .red-flag-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .red-flag-title svg { color: var(--brand-orange); }
+
+  .red-flag-body { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+  .red-flag-body strong { color: var(--text-primary); }
+
+  /* ── Next Step ── */
+  .next-step-card {
+    background: linear-gradient(135deg, rgba(37,99,176,0.2) 0%, rgba(26,60,107,0.3) 100%);
+    border: 1px solid var(--border-active);
+    border-radius: 10px;
+    padding: 28px 32px;
+  }
+
+  .next-step-cta {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+
+  .next-step-body { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; }
+  .next-step-body strong { color: var(--text-primary); }
+
+  /* ── Print ── */
+  @media print {
+    .output-sidenav, .export-btn, .intake-wrap, .loading-wrap { display: none !important; }
+    body { background: #fff !important; color: #111 !important; }
+    .output-layout { display: block !important; max-width: 100% !important; padding: 0 !important; }
+    .output-main { padding: 0 !important; }
+    .profile-card, .first-value-block, .week-card, .red-flag-card, .next-step-card {
+      background: #f8f9fa !important;
+      border-color: #ccc !important;
+      color: #222 !important;
+      break-inside: avoid;
+    }
+    .week-header { background: #eef2f7 !important; }
+    .section-eyebrow, .q-label, .week-badge { color: #1a3c6b !important; background: transparent !important; }
+    .section-heading, .output-title, .week-title, .red-flag-title, .next-step-cta { color: #111 !important; }
+    .text-primary, .profile-card strong, .option-text { color: #111 !important; }
+    .text-secondary, .profile-card, .first-value-block, .week-task,
+    .red-flag-body, .next-step-body, .metrics-table td { color: #333 !important; }
+    .metrics-table th { color: #555 !important; background: #eef2f7 !important; }
+    .weeks-grid .week-card { page-break-inside: avoid; }
+    .print-header {
+      display: block !important;
+      text-align: center;
+      padding: 20px 0 10px;
+      border-bottom: 2px solid #1a3c6b;
+      margin-bottom: 24px;
+    }
+    .print-footer {
+      display: block !important;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: #888;
+      padding: 8px;
+      border-top: 1px solid #ccc;
+    }
+    .out-section { page-break-inside: avoid; }
+  }
+
+  .print-header { display: none; }
+  .print-footer { display: none; }
+`;
+
+/* ─── INTAKE QUESTIONS ───────────────────────────────────────────────────── */
+const QUESTIONS = [
+  {
+    id: 'role',
+    label: 'Step 1 of 6 — Your Role',
+    text: 'What best describes your role?',
+    multi: false,
+    options: [
+      { id: 'it_admin',       label: 'IT Admin or Systems Administrator' },
+      { id: 'helpdesk_lead',  label: 'Help Desk Manager or Support Lead' },
+      { id: 'it_director',    label: 'IT Director or VP of IT' },
+      { id: 'msp_owner',      label: 'MSP Owner or Practice Manager' },
+      { id: 'msp_tech',       label: 'MSP Technician or NOC Engineer' },
+      { id: 'it_generalist',  label: 'IT Generalist (I do everything)' },
+    ],
+  },
+  {
+    id: 'envSize',
+    label: 'Step 2 of 6 — Environment Size',
+    text: 'How many devices or endpoints are you responsible for?',
+    multi: false,
+    options: [
+      { id: 'under50',    label: 'Under 50' },
+      { id: '50to250',    label: '50 to 250' },
+      { id: '251to1000',  label: '251 to 1,000' },
+      { id: '1001to5000', label: '1,001 to 5,000' },
+      { id: 'over5000',   label: 'More than 5,000' },
+    ],
+  },
+  {
+    id: 'currentStack',
+    label: 'Step 3 of 6 — Current Tools',
+    text: 'Which tools are you currently using? Select all that apply.',
+    multi: true,
+    options: [
+      { id: 'remote_tool',    label: 'A dedicated remote support tool (TeamViewer, AnyDesk, Splashtop, etc.)' },
+      { id: 'rmm_platform',   label: 'A separate RMM platform (NinjaOne, Kaseya, Datto, ConnectWise, etc.)' },
+      { id: 'mdm_tool',       label: 'Microsoft Intune or another MDM/endpoint management tool' },
+      { id: 'helpdesk_tool',  label: 'A helpdesk or ticketing system (Zendesk, Freshservice, Jira Service Desk, etc.)' },
+      { id: 'basic_tools',    label: 'I am using basic or built-in tools only (no dedicated platform)' },
+      { id: 'adhoc_mix',      label: 'I am using a mix of free and ad-hoc tools' },
+    ],
+  },
+  {
+    id: 'painPoint',
+    label: 'Step 4 of 6 — Primary Pain',
+    text: 'What is the single biggest problem you need to solve in the next 90 days?',
+    multi: false,
+    options: [
+      { id: 'remote_access',   label: 'I need faster, more reliable remote access to support my users' },
+      { id: 'visibility',      label: 'I have no visibility into what is happening across my devices' },
+      { id: 'patching',        label: 'Patching and software updates are taking too much manual time' },
+      { id: 'helpdesk_broken', label: 'My helpdesk process is broken — tickets, sessions, and tools are disconnected' },
+      { id: 'tool_reduction',  label: 'I need to reduce the number of tools I am paying for and managing' },
+      { id: 'msp_mgmt',        label: 'I am an MSP and I need better multi-client management from one place' },
+      { id: 'compliance',      label: 'I need to prove compliance or security posture to leadership or auditors' },
+    ],
+  },
+  {
+    id: 'successDef',
+    label: 'Step 5 of 6 — Success Definition',
+    text: 'How will you know this trial was a success? Choose the statement that fits best.',
+    multi: false,
+    options: [
+      { id: 'unattended_access', label: 'I can remote into any device in my environment without calling the user first' },
+      { id: 'live_inventory',    label: 'I have a live inventory of all devices with health and patch status visible' },
+      { id: 'faster_tickets',    label: 'I resolved tickets faster using integrated remote sessions than I did before' },
+      { id: 'tool_replaced',     label: 'I replaced at least one tool I am currently paying for' },
+      { id: 'msp_console',       label: 'I can manage multiple client environments from a single console without confusion' },
+      { id: 'compliance_report', label: 'I presented a compliance or patch coverage report to my manager or client' },
+    ],
+  },
+  {
+    id: 'biggestConcern',
+    label: 'Step 6 of 6 — Your Biggest Concern',
+    text: 'What would most likely cause you to walk away from this evaluation?',
+    multi: false,
+    options: [
+      { id: 'deploy_complexity', label: 'The agent is too complex or disruptive to deploy at scale' },
+      { id: 'session_quality',   label: 'Remote sessions are unreliable or slow compared to what I use today' },
+      { id: 'rmm_depth',         label: 'The RMM features are not deep enough to replace what I have' },
+      { id: 'pricing',           label: 'Pricing does not justify replacing my current stack' },
+      { id: 'team_adoption',     label: 'My team will not adopt a new tool without strong onboarding' },
+      { id: 'trial_window',      label: 'I cannot get meaningful results within my trial window' },
+    ],
+  },
+];
+
+/* ─── CONTENT ENGINE ─────────────────────────────────────────────────────── */
+
+function getRoleLabel(role) {
+  const map = {
+    it_admin: 'IT Admin / Systems Administrator',
+    helpdesk_lead: 'Help Desk Manager / Support Lead',
+    it_director: 'IT Director / VP of IT',
+    msp_owner: 'MSP Owner / Practice Manager',
+    msp_tech: 'MSP Technician / NOC Engineer',
+    it_generalist: 'IT Generalist',
+  };
+  return map[role] || role;
+}
+
+function getEnvLabel(env) {
+  const map = {
+    under50: 'under 50 devices',
+    '50to250': '50–250 devices',
+    '251to1000': '251–1,000 devices',
+    '1001to5000': '1,001–5,000 devices',
+    over5000: 'more than 5,000 devices',
+  };
+  return map[env] || env;
+}
+
+function getStackLabels(stack) {
+  const map = {
+    remote_tool: 'a dedicated remote support tool',
+    rmm_platform: 'a standalone RMM platform',
+    mdm_tool: 'an MDM/endpoint management tool',
+    helpdesk_tool: 'a helpdesk or ticketing system',
+    basic_tools: 'basic or built-in tools only',
+    adhoc_mix: 'a mix of free and ad-hoc tools',
+  };
+  return stack.map(s => map[s] || s);
+}
+
+function getPainLabel(pain) {
+  const map = {
+    remote_access: 'faster, more reliable remote access',
+    visibility: 'full device visibility and inventory',
+    patching: 'automated patch management',
+    helpdesk_broken: 'an integrated helpdesk workflow',
+    tool_reduction: 'tool consolidation and cost reduction',
+    msp_mgmt: 'multi-client MSP management',
+    compliance: 'compliance and security posture reporting',
+  };
+  return map[pain] || pain;
+}
+
+function getSuccessLabel(s) {
+  const map = {
+    unattended_access: 'unattended remote access to any device',
+    live_inventory: 'live device inventory with health and patch status',
+    faster_tickets: 'tickets resolved faster via integrated sessions',
+    tool_replaced: 'replacing at least one existing paid tool',
+    msp_console: 'managing multiple client environments from one console',
+    compliance_report: 'a compliance or patch coverage report delivered to leadership',
+  };
+  return map[s] || s;
+}
+
+function getConcernLabel(c) {
+  const map = {
+    deploy_complexity: 'agent deployment complexity',
+    session_quality: 'remote session reliability and performance',
+    rmm_depth: 'RMM feature depth vs. your current platform',
+    pricing: 'pricing vs. stack consolidation value',
+    team_adoption: 'team adoption and onboarding friction',
+    trial_window: 'getting meaningful results within the trial window',
+  };
+  return map[c] || c;
+}
+
+/* ── Profile summary paragraph ── */
+function buildProfileSummary(answers) {
+  const role = getRoleLabel(answers.role);
+  const env = getEnvLabel(answers.envSize);
+  const stack = getStackLabels(answers.currentStack || []);
+  const pain = getPainLabel(answers.painPoint);
+  const success = getSuccessLabel(answers.successDef);
+  const concern = getConcernLabel(answers.biggestConcern);
+
+  let stackStr;
+  if (stack.length === 0) stackStr = 'a mix of existing tools';
+  else if (stack.length === 1) stackStr = stack[0];
+  else stackStr = stack.slice(0, -1).join(', ') + ', and ' + stack[stack.length - 1];
+
+  return `You are evaluating GoTo Resolve as a ${role} responsible for ${env}. Your current environment includes ${stackStr}. The primary outcome you need to achieve in the next 90 days is ${pain}. You will consider this trial a success when you have demonstrated ${success}. Your most significant evaluation risk is ${concern} — this guide is structured to address that directly.`;
+}
+
+/* ── First Value Target ── */
+function buildFirstValue(answers) {
+  const { role, painPoint, successDef, envSize } = answers;
+
+  if (role === 'helpdesk_lead' || painPoint === 'helpdesk_broken' || successDef === 'faster_tickets') {
+    return `Your first value target is to resolve three real helpdesk tickets from creation to close without leaving the Resolve console — one from email, one from the end-user portal, and one created manually by you. Each ticket should escalate to an integrated remote session without opening a separate remote access tool. If you hit all three in your first week, you have proven the core helpdesk-to-session workflow that justifies this platform for your team.`;
+  }
+
+  if (role === 'msp_owner' || role === 'msp_tech' || painPoint === 'msp_mgmt' || successDef === 'msp_console') {
+    return `Your first value target is to have two real client environments fully isolated in Resolve — each with enrolled devices, separate technician access controls, and at least one completed unattended remote session — within your first five business days. If you can toggle between those two client environments in under 10 seconds and remote into any device in either one without confusion, you have validated the multi-tenancy foundation that the rest of your MSP workflow depends on.`;
+  }
+
+  if (painPoint === 'compliance' || successDef === 'compliance_report') {
+    return `Your first value target is a live compliance snapshot across your pilot device group: every enrolled device should be reporting OS version, patch status, and last-seen timestamp, and you should be able to identify your current patch gap — devices that are more than 30 days behind — within five business days. That single report, pulled without manual data collection, is your first proof that Resolve can replace the spreadsheet or patchwork of tools you are currently using for this.`;
+  }
+
+  if (painPoint === 'patching' || successDef === 'live_inventory') {
+    const pilotSize = envSize === 'under50' ? '10 to 20' : '20 to 50';
+    return `Within your first five business days, you should have the Resolve agent deployed on a pilot group of ${pilotSize} devices, a live inventory showing OS version, patch status, and hardware specs for every device in that group, and one patch policy deployed and confirmed successful on at least 80% of the pilot fleet. If you hit all three, you have validated the RMM core and proven that Resolve can give you the visibility your environment currently lacks.`;
+  }
+
+  if (painPoint === 'remote_access' || successDef === 'unattended_access') {
+    return `Your first value target is simple and specific: remote into five devices in your environment without calling or emailing the user first — all via unattended access — within your first three business days. Test across device types if your environment is mixed. If sessions connect reliably and feel fast, you have cleared the bar that matters most for your use case. Everything else in this guide builds on that foundation.`;
+  }
+
+  if (painPoint === 'tool_reduction' || successDef === 'tool_replaced') {
+    return `Your first value target is a capability map: within your first five business days, identify every tool you are currently paying for that has a direct equivalent in Resolve, and complete at least one real workflow in Resolve that you currently perform in one of those tools. You are not trying to replace everything in week one — you are confirming that the replacement path is real, not theoretical. One validated workflow substitution is enough to justify continuing the evaluation.`;
+  }
+
+  // default / it_director / it_generalist
+  return `Your first value target is a working foundation: agent deployed on a pilot group, device inventory visible and complete, and one successful unattended remote session — all within your first five business days. These three things together confirm that Resolve can see your environment and reach into it, which is the prerequisite for everything else this evaluation will test.`;
+}
+
+/* ── Week-by-week plan ── */
+function buildWeeklyPlan(answers) {
+  const { role, envSize, painPoint, successDef, biggestConcern, currentStack } = answers;
+
+  const isMSP = role === 'msp_owner' || role === 'msp_tech' || painPoint === 'msp_mgmt' || successDef === 'msp_console';
+  const isHelpdesk = role === 'helpdesk_lead' || painPoint === 'helpdesk_broken' || successDef === 'faster_tickets';
+  const isPatching = painPoint === 'patching' || painPoint === 'visibility' || successDef === 'live_inventory';
+  const isCompliance = painPoint === 'compliance' || successDef === 'compliance_report';
+  const isRemote = painPoint === 'remote_access' || successDef === 'unattended_access';
+  const isConsolidate = painPoint === 'tool_reduction' || successDef === 'tool_replaced';
+
+  const pilotSize = envSize === 'under50' ? '10–20' : envSize === '50to250' ? '20–50' : '50–100';
+
+  const week1 = {
+    label: 'Week 1',
+    title: 'Foundation — Agent Deployment & First Access',
+    tasks: isMSP ? [
+      `Create your first two client sites in the Resolve multi-tenant console`,
+      `Generate site-specific agent installers and deploy to 3–5 devices per client`,
+      `Configure technician role-based access — verify technicians cannot see across client boundaries`,
+      `Complete one unattended remote session per client site to confirm isolation is working`,
+      `Document your baseline: how long does client context-switching take in your current tool?`,
+    ] : [
+      `Deploy the Resolve agent to a pilot group of ${pilotSize} devices using the group-specific installer`,
+      `Validate inventory completeness — target 100% of pilot devices reporting within 24 hours`,
+      `Review the patch gap report and document your current compliance baseline before any remediation`,
+      `Create your first Device Group and confirm all pilot devices are correctly assigned`,
+      `Complete one unattended remote session on a device in the pilot group`,
+    ],
+  };
+
+  let week2;
+  if (isMSP) {
+    week2 = {
+      label: 'Week 2',
+      title: 'Multi-Tenant Operations — Cross-Client Efficiency',
+      tasks: [
+        `Test context-switching speed between client environments during a simulated live incident`,
+        `Deploy a patch policy to one client and confirm it does not affect the second client`,
+        `Run the same script on devices in both clients — validate output consistency`,
+        `Measure technician context-switching time in Resolve vs. your current platform`,
+        `Identify which client management workflows still require leaving the Resolve console`,
+      ],
+    };
+  } else if (isHelpdesk) {
+    week2 = {
+      label: 'Week 2',
+      title: 'Helpdesk Integration — Ticket-to-Session Workflow',
+      tasks: [
+        `Configure email-to-ticket integration and set up the end-user self-service portal`,
+        `Resolve 3 real tickets end-to-end: one from email, one from the portal, one created manually`,
+        `Test one-click escalation from an open ticket to an active remote session`,
+        `Validate session recording and confirm recordings attach to the closed ticket`,
+        `Measure time from ticket open to remote session active — record your baseline`,
+      ],
+    };
+  } else if (isPatching || isCompliance) {
+    week2 = {
+      label: 'Week 2',
+      title: 'Patch Management — Full Policy Cycle',
+      tasks: [
+        `Create a patch policy targeting your pilot Device Group`,
+        `Run a patch scan and review results against the baseline you captured in Week 1`,
+        `Deploy one OS patch and one third-party application patch to the pilot group`,
+        `Validate patch success rate and review the failure log for any devices that did not comply`,
+        `Test manual override — push a one-off patch to a single device on demand`,
+      ],
+    };
+  } else if (isRemote) {
+    week2 = {
+      label: 'Week 2',
+      title: 'Remote Access Depth — Multi-Device & Edge Cases',
+      tasks: [
+        `Test unattended access across all OS types in your environment (Windows, Mac, Linux if applicable)`,
+        `Test attended session flow — confirm the end-user experience is acceptable`,
+        `Validate multi-monitor support, file transfer, and clipboard sync in a real session`,
+        `Test session behavior on a low-bandwidth or high-latency connection`,
+        `Review session recordings and confirm they are stored and retrievable`,
+      ],
+    };
+  } else {
+    week2 = {
+      label: 'Week 2',
+      title: 'Core Use Case — Capability Validation',
+      tasks: [
+        `Identify the two or three workflows you perform most frequently across your current tools`,
+        `Replicate each workflow entirely within Resolve — document where it maps cleanly`,
+        `Flag any capability gaps and note whether they are blockers or workarounds`,
+        `Run a patch policy on your pilot group and review the compliance output`,
+        `Expand agent deployment to a second device group beyond your original pilot`,
+      ],
+    };
+  }
+
+  let week3;
+  if (isMSP) {
+    week3 = {
+      label: 'Week 3',
+      title: 'Client Reporting & Documentation',
+      tasks: [
+        `Generate a device health report for each client — evaluate completeness and export quality`,
+        `Test per-client report branding — confirm each client's report is visually isolated`,
+        `Review what data is exportable for client-facing QBRs and executive summaries`,
+        `Test the AI scripting assistant: generate a client-specific automation from natural language`,
+        `Document which client reporting needs Resolve covers vs. what still requires manual work`,
+      ],
+    };
+  } else if (isHelpdesk) {
+    week3 = {
+      label: 'Week 3',
+      title: 'Team Adoption Test',
+      tasks: [
+        `Add 2–3 of your technicians to Resolve and brief them on the core workflow`,
+        `Have each technician handle their normal daily ticket volume in Resolve for 3 full days`,
+        `Collect qualitative feedback: what is faster, what is slower, what is missing`,
+        `Run the AI ticket summarization on 5 closed tickets — evaluate accuracy and time saved`,
+        `Document the top 3 technician objections — you will address these directly in Week 4`,
+      ],
+    };
+  } else if (isCompliance) {
+    week3 = {
+      label: 'Week 3',
+      title: 'Compliance Reporting & Audit Readiness',
+      tasks: [
+        `Generate a full patch compliance report across all enrolled devices`,
+        `Configure threshold-based alerts for devices that fall out of compliance`,
+        `Test the policy enforcement workflow — apply a configuration policy and confirm enforcement`,
+        `Export a compliance summary in a format you could present to leadership or an auditor`,
+        `Identify any compliance data points that Resolve does not currently capture`,
+      ],
+    };
+  } else {
+    week3 = {
+      label: 'Week 3',
+      title: 'Automation, Scripting & AI Features',
+      tasks: [
+        `Use the AI scripting assistant to generate a script for your most common manual task`,
+        `Deploy that script to the pilot group as a scheduled automation and validate output`,
+        `Configure 2–3 device health alerts (disk space threshold, CPU spike, offline device)`,
+        `Validate alert delivery and confirm the response workflow fits your team's process`,
+        `Test the AI ticket summarization or anomaly detection features relevant to your environment`,
+      ],
+    };
+  }
+
+  let week4;
+  if (biggestConcern === 'rmm_depth') {
+    week4 = {
+      label: 'Week 4',
+      title: 'RMM Depth Validation — Head-to-Head with Your Current Tool',
+      tasks: [
+        `Write down 5 specific RMM tasks you perform regularly in your current platform`,
+        `Attempt each one in Resolve and document: fully supported / workaround available / genuine gap`,
+        `For any genuine gaps, share the specific use case with your SC before concluding it is a blocker`,
+        `Test one advanced scenario: a multi-step scripted remediation with conditional logic`,
+        `Decision framework: if 4 of 5 tasks work cleanly, the platform is viable — gaps are a roadmap conversation`,
+      ],
+    };
+  } else if (biggestConcern === 'deploy_complexity') {
+    week4 = {
+      label: 'Week 4',
+      title: 'Deployment Stress Test — Scale & Edge Cases',
+      tasks: [
+        `Expand agent deployment beyond your pilot group — target at least 2x the original pilot size`,
+        `Test deployment via GPO or your existing software distribution method if applicable`,
+        `Document every device that fails to enroll and classify the failure reason (network, firewall, OS version)`,
+        `Validate that enrolled devices survive a reboot and reconnect automatically`,
+        `Share your deployment failure rate and failure classification with your SC — target is under 5%`,
+      ],
+    };
+  } else if (biggestConcern === 'team_adoption') {
+    week4 = {
+      label: 'Week 4',
+      title: 'Adoption Decision — Objection Resolution',
+      tasks: [
+        `Review the technician objections documented in Week 3 with your SC`,
+        `Classify each objection: configuration issue (fixable now) / learning curve (temporary) / product gap (flag)`,
+        `For configuration issues: resolve them during the Week 4 SC session`,
+        `For learning curve issues: identify the specific training or documentation that addresses it`,
+        `Decision rule: if more than 2 of your top 3 objections are genuine product gaps, that is a real signal worth discussing with your SC before deciding`,
+      ],
+    };
+  } else if (biggestConcern === 'pricing' || isMSP) {
+    week4 = {
+      label: 'Week 4',
+      title: 'Stack Consolidation Math — Commercial Validation',
+      tasks: [
+        `List every tool you are currently paying for that Resolve partially or fully replaces`,
+        `Map each capability to the specific Resolve feature that covers it`,
+        `Calculate current per-seat or per-device spend on replaceable tools vs. Resolve pricing`,
+        `Identify what stays — tools Resolve cannot replace today — and factor that into your model`,
+        `Share this analysis with your SC before any commercial conversation — it is the most useful input they can have`,
+      ],
+    };
+  } else if (biggestConcern === 'session_quality') {
+    week4 = {
+      label: 'Week 4',
+      title: 'Session Reliability — Systematic Quality Assessment',
+      tasks: [
+        `Run 10 unattended sessions across different device types, network conditions, and geographies`,
+        `Score each session: connection time, visual quality, input latency, stability`,
+        `Test one session over a cellular hotspot or VPN to simulate field technician conditions`,
+        `Compare your scores against your current remote access tool on the same devices`,
+        `If you observe consistent quality issues on specific device types or networks, document and share with SC — many are resolvable at the infrastructure level`,
+      ],
+    };
+  } else {
+    week4 = {
+      label: 'Week 4',
+      title: 'Decision Criteria Validation — Trial Readout',
+      tasks: [
+        `Return to your success definition from the intake: have you achieved it? Document the evidence`,
+        `Identify the one capability you are least confident about and stress-test it this week`,
+        `Review the red flags section of this guide — have you observed any of them?`,
+        `Prepare a 5-minute trial readout: what worked, what did not, what questions remain`,
+        `Schedule a debrief with your SC before the trial expires — bring your readout and your concerns`,
+      ],
+    };
+  }
+
+  return [week1, week2, week3, week4];
+}
+
+/* ── Success Metrics ── */
+function buildMetrics(answers) {
+  const { role, painPoint, successDef, biggestConcern } = answers;
+  const isMSP = role === 'msp_owner' || role === 'msp_tech' || painPoint === 'msp_mgmt' || successDef === 'msp_console';
+  const isHelpdesk = role === 'helpdesk_lead' || painPoint === 'helpdesk_broken' || successDef === 'faster_tickets';
+  const isCompliance = painPoint === 'compliance' || successDef === 'compliance_report';
+
+  const base = [
+    {
+      name: 'Agent deployment success rate',
+      how: 'Devices enrolled ÷ devices targeted × 100 in the Resolve device inventory',
+      target: '95%+ of targeted devices enrolled within 48 hours',
+      why: 'Deployment friction is the most common early blocker — a high rate confirms your network and security posture are compatible',
+    },
+    {
+      name: 'Inventory completeness',
+      how: 'Count of devices reporting OS, patch status, and hardware data vs. expected pilot size',
+      target: '100% of enrolled devices reporting complete data within 24 hours of enrollment',
+      why: 'Incomplete inventory means blind spots — you cannot patch or manage what you cannot see',
+    },
+  ];
+
+  const patchMetric = {
+    name: 'Patch compliance rate on pilot group',
+    how: 'Compliant devices ÷ total enrolled devices, visible in the Patch Management dashboard',
+    target: '90%+ compliant within 7 days of policy creation',
+    why: 'This is your proof that Resolve can close the patch gap you identified in Week 1',
+  };
+
+  const sessionMetric = {
+    name: 'Unattended session connection time',
+    how: 'Time from clicking "Connect" to live session — measure 10 sessions and average',
+    target: 'Under 15 seconds on a standard corporate network',
+    why: 'Session latency is the most visceral indicator of whether your team will actually use the tool',
+  };
+
+  const ticketMetric = {
+    name: 'Ticket-to-session time',
+    how: 'Time from ticket created to remote session active — track manually on 10 tickets',
+    target: 'Under 3 minutes from ticket open to active remote session',
+    why: 'This single metric captures the workflow integration that justifies replacing your current stack',
+  };
+
+  const adoptionMetric = {
+    name: 'Technician satisfaction score',
+    how: 'Informal 1–5 rating from each technician after 3 days of daily use — average the scores',
+    target: '3.5+ average, with no technician rating below 2',
+    why: 'A tool your team refuses to use has no ROI — this catches adoption risk before you commit',
+  };
+
+  const mspIsolationMetric = {
+    name: 'Client isolation verification',
+    how: 'Confirm technician A (scoped to Client 1) cannot see Client 2 devices — test both directions',
+    target: 'Zero cross-client visibility with default role-based access configuration',
+    why: 'A single isolation failure is a disqualifying event for an MSP — test this before anything else',
+  };
+
+  const contextSwitchMetric = {
+    name: 'Client context-switch time',
+    how: 'Time to move from an active session in Client 1 to an active session in Client 2 — measure 5 switches',
+    target: 'Under 10 seconds per switch',
+    why: 'Multi-client efficiency is what differentiates an MSP platform from a single-tenant tool',
+  };
+
+  const complianceMetric = {
+    name: 'Compliance report generation time',
+    how: 'Time from opening Resolve to exporting a shareable patch compliance report',
+    target: 'Under 5 minutes for a report covering your full pilot group',
+    why: 'If generating a compliance snapshot takes longer than it does today, the tool is not solving your problem',
+  };
+
+  const scriptMetric = {
+    name: 'Automation deployment success rate',
+    how: 'Scripts that execute successfully on first run ÷ total scripts deployed',
+    target: '90%+ on first run across pilot devices',
+    why: 'Script reliability is the foundation of RMM value — one-off failures are normal, systemic failures are not',
+  };
+
+  const alertMetric = {
+    name: 'Alert delivery latency',
+    how: 'Time from threshold breach to alert notification in Resolve — trigger a test condition manually',
+    target: 'Alert generated within 5 minutes of threshold breach',
+    why: 'Slow alerts mean slow response — if your current tool is faster, that is a real regression to flag',
+  };
+
+  if (isMSP) {
+    return [...base, mspIsolationMetric, contextSwitchMetric, patchMetric, sessionMetric];
+  }
+  if (isHelpdesk) {
+    return [...base, ticketMetric, adoptionMetric, sessionMetric, alertMetric];
+  }
+  if (isCompliance) {
+    return [...base, patchMetric, complianceMetric, alertMetric, scriptMetric];
+  }
+  return [...base, patchMetric, sessionMetric, scriptMetric, alertMetric];
+}
+
+/* ── Red Flags ── */
+function buildRedFlags(answers) {
+  const { biggestConcern, painPoint, role, envSize } = answers;
+  const isMSP = role === 'msp_owner' || role === 'msp_tech' || painPoint === 'msp_mgmt';
+  const isLarge = envSize === '1001to5000' || envSize === 'over5000';
+
+  const flags = [];
+
+  if (biggestConcern === 'rmm_depth') {
+    flags.push({
+      title: 'You cannot replicate a scripted workflow your team runs today',
+      body: `If you attempt to recreate a specific multi-step automation from your current RMM and Resolve does not support the scripting logic or scheduling granularity you need, that is a genuine depth gap — not a configuration issue. <strong>What to do:</strong> Document the exact workflow (language, trigger, conditions, output) and share it with your SC. This is active development territory and your SC may have a supported workaround or a roadmap timeline that changes your calculus.`,
+    });
+    flags.push({
+      title: 'Policy scope is not behaving as expected',
+      body: `If you create a patch or configuration policy targeting a Device Group and the scope bleeds to unintended devices — or excludes devices it should catch — stop and check your Group assignments before escalating. This is almost always a Device Group configuration issue, not a product defect. <strong>What to do:</strong> Audit your Group membership rules before concluding there is a scoping bug.`,
+    });
+  }
+
+  if (biggestConcern === 'deploy_complexity' || isLarge) {
+    flags.push({
+      title: 'Agent enrollment failure rate exceeds 10% with no clear error pattern',
+      body: `Isolated enrollment failures are normal — firewall rules, endpoint security exceptions, and OS version edge cases all cause them. A failure rate above 10% with no repeating error code is different: it usually means a network-level policy is blocking the agent's communication path. <strong>What to do:</strong> Pull the enrollment failure log, identify whether failures cluster by subnet or device type, and share with your SC. Do not interpret broad enrollment failures as product quality until this is ruled out.`,
+    });
+  }
+
+  if (biggestConcern === 'session_quality') {
+    flags.push({
+      title: 'Session latency is consistently higher than your current tool on the same devices',
+      body: `Run this test head-to-head: connect to the same device with Resolve and your current tool within the same hour. If Resolve is meaningfully slower on a corporate network, document the delta. Occasional latency is infrastructure. Consistent latency on the same device is signal. <strong>What to do:</strong> Share your comparison data with your SC — Resolve has relay infrastructure in multiple regions, and SC can verify whether your devices are connecting to a suboptimal relay.`,
+    });
+  }
+
+  if (biggestConcern === 'team_adoption') {
+    flags.push({
+      title: 'Technicians rate the tool below 2 out of 5 after 3 days — not just one of them',
+      body: `One technician struggling is a training issue. Multiple technicians independently rating the workflow below 2 after 3 real days of use is a product fit signal. The most common cause is a specific missing keyboard shortcut, a required feature from their current tool, or a session handoff workflow that does not match their mental model. <strong>What to do:</strong> Do not dismiss this. Collect the specific objections, bring them to your SC, and distinguish between "different from what we know" and "worse for our actual job."`,
+    });
+  }
+
+  if (biggestConcern === 'pricing') {
+    flags.push({
+      title: 'The consolidation math does not work even after mapping all replaced tools',
+      body: `If you complete the Week 4 stack consolidation exercise and Resolve costs more than the tools it replaces — even accounting for the tools you can remove — that is a legitimate commercial concern, not an evaluation failure. <strong>What to do:</strong> Share your cost model with your SC before the trial ends. Pricing conversations are far more productive when they are grounded in a specific, documented comparison rather than a general objection.`,
+    });
+  }
+
+  if (biggestConcern === 'trial_window') {
+    flags.push({
+      title: 'You reach the end of Week 2 and have not completed a single end-to-end workflow',
+      body: `If you are mid-trial and have not yet completed one complete workflow — one ticket resolved, one device patched, one unattended session established — the evaluation is at risk of running out of time before producing a decision. This is usually caused by deployment blockers or competing priorities, not product issues. <strong>What to do:</strong> Contact your SC immediately. A focused half-day session with SC support can often compress two weeks of exploration into a single day of structured testing.`,
+    });
+  }
+
+  if (isMSP) {
+    flags.push({
+      title: 'Client data or device lists are visible across site boundaries',
+      body: `Any cross-client data visibility — even partial — is a disqualifying condition for an MSP deployment. This should not happen with default configuration, but verify it explicitly in Week 1. <strong>What to do:</strong> If you observe any cross-client data leakage, stop the evaluation and contact your SC immediately. This is a configuration audit, not a product defect — but it must be resolved before any client data is moved into the platform.`,
+    });
+  }
+
+  // Always include a universal "learning curve vs. gap" red flag
+  flags.push({
+    title: 'You are frustrated with the UI but cannot name a specific missing capability',
+    body: `Frustration with a new tool in the first two weeks is almost always a learning curve issue, not a product gap. If you find yourself annoyed but cannot articulate a specific workflow that is impossible — only one that is different from what you know — treat that as onboarding friction. <strong>What to do:</strong> Identify the three most frustrating moments and look them up in the Resolve knowledge base before escalating. Most "missing" features are present but in a different location than users expect.`,
+  });
+
+  return flags.slice(0, 5);
+}
+
+/* ── Next Step ── */
+function buildNextStep(answers) {
+  const { role, biggestConcern } = answers;
+  const isMSP = role === 'msp_owner' || role === 'msp_tech';
+
+  if (biggestConcern === 'trial_window') {
+    return {
+      cta: 'Start Week 1 today — time is your most constrained resource.',
+      body: `Share this guide with anyone on your team who will be involved in the evaluation, and complete the Week 1 foundation tasks before your next meeting with your Solutions Consultant. <strong>Book a check-in with your SC at the end of Week 1</strong> — bring your agent enrollment count, your first inventory screenshot, and any blockers you hit. Your SC can compress your evaluation timeline significantly if you give them early signal on where you are stuck.`,
+    };
+  }
+
+  if (isMSP) {
+    return {
+      cta: 'Set up your first two client sites before anything else.',
+      body: `The entire MSP evaluation depends on validating multi-tenancy first. Share this guide with your senior technician or NOC lead, and complete the client site setup and isolation verification in Week 1 together. <strong>Book a commercial check-in with your SC at the end of Week 3</strong> — bring your consolidation math and your Week 3 client reporting assessment. That conversation will determine whether the commercial case is real.`,
+    };
+  }
+
+  return {
+    cta: 'Share this guide with your team and schedule your Week 1 kickoff.',
+    body: `You do not need to run this evaluation alone. Share this guide with the one or two people on your team who will be most affected by the outcome, and align on who owns each week's testing tasks. <strong>Your Solutions Consultant is your most valuable resource during this trial</strong> — book a 30-minute check-in at the end of Week 2 and bring your results. They have seen hundreds of evaluations in environments like yours and can tell you quickly whether what you are seeing is normal or worth escalating.`,
+  };
+}
+
+/* ─── SUB-COMPONENTS ─────────────────────────────────────────────────────── */
+
+function ProgressDots({ total, current }) {
+  return (
+    <div className="progress-dots">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`progress-dot ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function IntakeQuestion({ question, answers, onAnswer, onContinue, qIndex }) {
+  const selected = answers[question.id];
+  const isMulti = question.multi;
+
+  function handleSelect(optId) {
+    if (isMulti) {
+      const current = selected || [];
+      const next = current.includes(optId)
+        ? current.filter(x => x !== optId)
+        : [...current, optId];
+      onAnswer(question.id, next);
+    } else {
+      onAnswer(question.id, optId);
+    }
+  }
+
+  const hasSelection = isMulti ? (selected && selected.length > 0) : !!selected;
+
+  return (
+    <div className="question-block" key={question.id}>
+      <div className="q-label">{question.label}</div>
+      <div className="q-text">{question.text}</div>
+      {question.options.map(opt => {
+        const isSelected = isMulti
+          ? (selected || []).includes(opt.id)
+          : selected === opt.id;
+        return (
+          <div
+            key={opt.id}
+            className={`option-card ${isSelected ? 'selected' : ''}`}
+            onClick={() => handleSelect(opt.id)}
+          >
+            <div className={isMulti ? 'option-check-box' : 'option-check'}>
+              {isSelected && (
+                <Icon name="Check" size={12} color="#1A1A2E" strokeWidth={3} />
+              )}
+            </div>
+            <span className="option-text">{opt.label}</span>
+          </div>
+        );
+      })}
+      {isMulti && (
+        <button
+          className="continue-btn"
+          disabled={!hasSelection}
+          onClick={onContinue}
+          style={{ marginTop: 20 }}
+        >
+          Continue <Icon name="ChevronRight" size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function LoadingView() {
+  return (
+    <div className="loading-wrap">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Icon name="Star" size={22} color="#FFD800" />
+        <span className="loading-text">Building your evaluation guide…</span>
+      </div>
+      <div className="loading-bar-track">
+        <div className="loading-bar-fill" />
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
+        Personalizing for your environment
+      </div>
+    </div>
+  );
+}
+
+function HtmlBody({ html }) {
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+function SideNav({ active, onNav }) {
+  const links = [
+    { id: 'profile',     label: 'Evaluation Profile',   icon: <Icon name="FileText" size={13} /> },
+    { id: 'firstvalue',  label: 'First Value Target',   icon: <Icon name="Target" size={13} /> },
+    { id: 'testplan',    label: 'Test Plan',             icon: <Icon name="Calendar" size={13} /> },
+    { id: 'metrics',     label: 'Success Metrics',      icon: <Icon name="BarChart3" size={13} /> },
+    { id: 'redflags',    label: 'Red Flags',             icon: <Icon name="AlertTriangle" size={13} /> },
+    { id: 'nextstep',    label: 'Next Step',             icon: <Icon name="ArrowRight" size={13} /> },
+  ];
+  return (
+    <nav className="output-sidenav">
+      <div className="sidenav-logo">GoTo Resolve</div>
+      {links.map(l => (
+        <a
+          key={l.id}
+          className={`sidenav-link ${active === l.id ? 'active' : ''}`}
+          onClick={() => onNav(l.id)}
+          href={`#${l.id}`}
+        >
+          {l.icon} {l.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function WeekCard({ week }) {
+  return (
+    <div className="week-card">
+      <div className="week-header">
+        <span className="week-badge">{week.label}</span>
+        <span className="week-title">{week.title}</span>
+      </div>
+      <div className="week-body">
+        <ul className="week-tasks">
+          {week.tasks.map((task, i) => (
+            <li key={i} className="week-task">
+              <span className="task-bullet" />
+              <span>{task}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MetricsTable({ metrics }) {
+  return (
+    <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+      <table className="metrics-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>How to Measure in Resolve</th>
+            <th>Passing Result</th>
+            <th>Why It Matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          {metrics.map((m, i) => (
+            <tr key={i}>
+              <td>{m.name}</td>
+              <td>{m.how}</td>
+              <td><span className="pass-pill">{m.target}</span></td>
+              <td>{m.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function RedFlagCard({ flag }) {
+  return (
+    <div className="red-flag-card">
+      <div className="red-flag-title">
+        <Icon name="AlertTriangle" size={15} />
+        {flag.title}
+      </div>
+      <div className="red-flag-body"><HtmlBody html={flag.body} /></div>
+    </div>
+  );
+}
+
+function OutputView({ answers, onReset }) {
+  const [activeSection, setActiveSection] = useState('profile');
+
+  const profile   = buildProfileSummary(answers);
+  const firstVal  = buildFirstValue(answers);
+  const weeks     = buildWeeklyPlan(answers);
+  const metrics   = buildMetrics(answers);
+  const redFlags  = buildRedFlags(answers);
+  const nextStep  = buildNextStep(answers);
+
+  function handleExport() {
+    window.print();
+  }
+
+  return (
+    <div>
+      <div className="print-header">
+        <strong style={{ fontSize: 18 }}>GoTo Resolve</strong>
+        <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Trial Evaluation Guide</div>
+      </div>
+      <div className="print-footer">
+        GoTo Resolve Trial Evaluation Guide | Prepared by GoTo Solutions Consulting | Confidential
+      </div>
+
+      <div className="output-layout">
+        <SideNav active={activeSection} onNav={setActiveSection} />
+        <main className="output-main">
+          <div className="output-header">
+            <div>
+              <div className="output-title">Your GoTo Resolve<br />Evaluation Guide</div>
+              <div className="output-subtitle">
+                Personalized for {getRoleLabel(answers.role)} · {getEnvLabel(answers.envSize)}
+              </div>
+            </div>
+            <button className="export-btn" onClick={handleExport}>
+              <Icon name="Download" size={15} /> Export Guide
+            </button>
+          </div>
+
+          {/* Section 1 — Profile */}
+          <section id="profile" className="out-section">
+            <div className="section-eyebrow">Section 01</div>
+            <div className="section-heading">
+              <Icon name="FileText" size={18} /> Your Evaluation Profile
+            </div>
+            <div className="profile-card">{profile}</div>
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 2 — First Value */}
+          <section id="firstvalue" className="out-section">
+            <div className="section-eyebrow">Section 02</div>
+            <div className="section-heading">
+              <Icon name="Target" size={18} /> Your First Value Target
+            </div>
+            <div className="first-value-block">{firstVal}</div>
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 3 — Test Plan */}
+          <section id="testplan" className="out-section">
+            <div className="section-eyebrow">Section 03</div>
+            <div className="section-heading">
+              <Icon name="Calendar" size={18} /> Your Personalized 30-Day Test Plan
+            </div>
+            <div className="weeks-grid">
+              {weeks.map((w, i) => <WeekCard key={i} week={w} />)}
+            </div>
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 4 — Metrics */}
+          <section id="metrics" className="out-section">
+            <div className="section-eyebrow">Section 04</div>
+            <div className="section-heading">
+              <Icon name="BarChart3" size={18} /> Success Metrics
+            </div>
+            <MetricsTable metrics={metrics} />
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 5 — Red Flags */}
+          <section id="redflags" className="out-section">
+            <div className="section-eyebrow">Section 05</div>
+            <div className="section-heading">
+              <Icon name="AlertTriangle" size={18} /> Red Flags to Watch For
+            </div>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.65 }}>
+              These are honest indicators of genuine product fit issues — not learning curve friction.
+              Knowing the difference will save you from both a false negative and a false positive on this evaluation.
+            </p>
+            <div className="red-flags">
+              {redFlags.map((f, i) => <RedFlagCard key={i} flag={f} />)}
+            </div>
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 6 — Next Step */}
+          <section id="nextstep" className="out-section">
+            <div className="section-eyebrow">Section 06</div>
+            <div className="section-heading">
+              <Icon name="ArrowRight" size={18} /> Your Next Step
+            </div>
+            <div className="next-step-card">
+              <div className="next-step-cta">{nextStep.cta}</div>
+              <div className="next-step-body"><HtmlBody html={nextStep.body} /></div>
+            </div>
+          </section>
+
+          <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid var(--border-subtle)' }}>
+            <button
+              onClick={onReset}
+              style={{
+                background: 'none',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-muted)',
+                borderRadius: 6,
+                padding: '8px 16px',
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'DM Mono, monospace',
+              }}
+            >
+              ← Start Over
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN APP ───────────────────────────────────────────────────────────── */
+
+function ResolveTrialGuide() {
+  const [phase, setPhase] = useState('intake');
+  const [qIndex, setQIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const autoAdvanceTimer = useRef(null);
+  // Store qIndex in a ref so setTimeout callbacks always see the latest value
+  const qIndexRef = useRef(0);
+
+  useEffect(() => {
+    qIndexRef.current = qIndex;
+  }, [qIndex]);
+
+  useEffect(() => {
+    const existing = document.getElementById('resolve-guide-styles');
+    if (!existing) {
+      const el = document.createElement('style');
+      el.id = 'resolve-guide-styles';
+      el.textContent = GLOBAL_CSS;
+      document.head.appendChild(el);
+    }
+    return () => {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    };
+  }, []);
+
+  const totalQ = QUESTIONS.length;
+  const currentQ = QUESTIONS[qIndex];
+
+  function advance(currentIndex) {
+    if (currentIndex < totalQ - 1) {
+      setQIndex(currentIndex + 1);
+    } else {
+      setPhase('loading');
+      setTimeout(() => setPhase('output'), 1400);
+    }
+  }
+
+  function handleAnswer(qId, value) {
+    const updated = { ...answers, [qId]: value };
+    setAnswers(updated);
+    if (!currentQ.multi) {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      // Capture current index in a local variable — safe from stale closure
+      const capturedIndex = qIndexRef.current;
+      autoAdvanceTimer.current = setTimeout(() => advance(capturedIndex), 400);
+    }
+  }
+
+  function handleContinue() {
+    advance(qIndexRef.current);
+  }
+
+  function handleReset() {
+    setAnswers({});
+    setQIndex(0);
+    qIndexRef.current = 0;
+    setPhase('intake');
+  }
+
+  if (phase === 'loading') return <LoadingView />;
+  if (phase === 'output') return <OutputView answers={answers} onReset={handleReset} />;
+
+  return (
+    <div className="intake-wrap">
+      <div className="intake-inner">
+        <ProgressDots total={totalQ} current={qIndex} />
+        <IntakeQuestion
+          key={currentQ.id}
+          question={currentQ}
+          answers={answers}
+          onAnswer={handleAnswer}
+          onContinue={handleContinue}
+          qIndex={qIndex}
+        />
+      </div>
+    </div>
+  );
+}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(ResolveTrialGuide));
+  </script>
+</body>
+</html>
