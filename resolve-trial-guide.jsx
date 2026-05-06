@@ -944,15 +944,31 @@ function upsertCheckIn(record, checkIn) {
 }
 
 /* ─── CHECK-IN QUESTION BUILDER ─────────────────────────────────────────── */
+const END_OF_TRIAL_CRITERIA = [
+  'All agents are deployed and reporting — environment coverage is complete',
+  'Primary use case is working in production (not just a pilot)',
+  'At least one team member beyond the evaluator has used the tool',
+  'Known gaps or missing features have been documented and shared with GoTo SC',
+  'ROI or consolidation case has been validated (time saved, tools replaced, or coverage improved)',
+  'Stakeholder or manager sign-off on trial results has been obtained',
+];
+
 function buildCheckInCriteria(answers, week) {
+  if (week === 5) {
+    return END_OF_TRIAL_CRITERIA.map((task, i) => ({
+      id: `w5_${i}`,
+      name: task,
+      status: null,
+      comment: '',
+    }));
+  }
   const weeks = buildWeeklyPlan(answers);
   const weekData = weeks[week - 1];
   if (!weekData) return [];
-  // Turn each task into a scoreable criterion
   return weekData.tasks.map((task, i) => ({
     id: `w${week}_${i}`,
     name: task,
-    status: null,  // 'met'|'partial'|'notmet'|'skipped'
+    status: null,
     comment: '',
   }));
 }
@@ -1505,10 +1521,111 @@ function SADView({ record, onBack, onCheckIn }) {
           </div>
         )}
 
-        {/* S6 — Recommended Next Steps (editable) */}
+        {/* S6 — Mutual Success Plan */}
+        {checkIns.some(ci => ci.week === 5) && (
+          <div className="sad-section">
+            <div className="sad-section-header">
+              <span className="sad-section-num">Section 06</span>
+              <span className="sad-section-title">Mutual Success Plan</span>
+            </div>
+            {(() => {
+              const gaps = checkIns.flatMap(ci =>
+                (ci.criteria || []).filter(c => c.status === 'notmet' || c.status === 'partial')
+              );
+              const passedItems = checkIns.flatMap(ci =>
+                (ci.criteria || []).filter(c => c.status === 'met')
+              );
+
+              const verdictGuidance = {
+                pass: {
+                  cls: 'card-success',
+                  heading: 'Trial Complete — Ready to Move Forward',
+                  body: `All key criteria were met during this evaluation. The recommended path is to move directly to commercial review. Your SC will prepare a proposal scoped to your environment size and the use cases validated during this trial.`,
+                },
+                conditional: {
+                  cls: 'card-warn',
+                  heading: 'Conditional Pass — Remediation Plan Needed',
+                  body: `The evaluation surfaced gaps that need to be addressed before a final purchase decision. Your SC will work with you to scope a remediation path — this typically involves a targeted follow-up session or feature deep-dive for each open item listed above.`,
+                },
+                notpassed: {
+                  cls: 'card-danger',
+                  heading: 'Trial Not Passed — Joint Review Required',
+                  body: `The evaluation identified significant gaps against your success criteria. Before making a purchase decision, schedule a joint review session with your SC to walk through each gap, confirm whether a product or deployment fix is available, and determine if an extended trial period would change the outcome.`,
+                },
+              };
+              const g = verdictGuidance[verdict] || {
+                cls: 'card',
+                heading: 'Trial In Progress',
+                body: 'Complete all weekly check-ins to generate your Mutual Success Plan.',
+              };
+
+              return (
+                <>
+                  <div className={g.cls} style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text1)', marginBottom: 8 }}>{g.heading}</div>
+                    <p className="body-text">{g.body}</p>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+                    <div className="card">
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10 }}>
+                        Validated Capabilities ({passedItems.length})
+                      </div>
+                      {passedItems.length === 0
+                        ? <p style={{ fontSize: 13, color: 'var(--text3)', fontStyle: 'italic' }}>No items marked Met yet.</p>
+                        : passedItems.slice(0, 8).map((c, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6, fontSize: 13, color: 'var(--text2)' }}>
+                            <span style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }}>✓</span>
+                            <span>{c.name}</span>
+                          </div>
+                        ))
+                      }
+                      {passedItems.length > 8 && <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>+{passedItems.length - 8} more</p>}
+                    </div>
+                    <div className="card">
+                      <div style={{ fontSize: 11, fontWeight: 700, color: gaps.length > 0 ? 'var(--danger)' : 'var(--text3)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10 }}>
+                        Open Items ({gaps.length})
+                      </div>
+                      {gaps.length === 0
+                        ? <p style={{ fontSize: 13, color: 'var(--text3)', fontStyle: 'italic' }}>No gaps — all scored items were met.</p>
+                        : gaps.map((c, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6, fontSize: 13, color: 'var(--text2)' }}>
+                            <span style={{ color: c.status === 'notmet' ? 'var(--danger)' : 'var(--amber)', flexShrink: 0, marginTop: 1 }}>{c.status === 'notmet' ? '✕' : '~'}</span>
+                            <span>{c.name}</span>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  <div className="card" style={{ marginBottom: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Suggested Path to Decision</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {[
+                        verdict === 'pass' && { step: '1', label: 'Share this report with your manager or procurement team', color: 'var(--success)' },
+                        verdict === 'pass' && { step: '2', label: 'Request commercial proposal from your GoTo AE', color: 'var(--success)' },
+                        verdict !== 'pass' && gaps.length > 0 && { step: '1', label: 'Schedule a gap review session with your SC — share this report in advance', color: 'var(--amber)' },
+                        verdict !== 'pass' && gaps.length > 0 && { step: '2', label: 'Confirm whether gaps are product limitations or deployment/config issues', color: 'var(--amber)' },
+                        { step: verdict === 'pass' ? '3' : '3', label: 'Align on contract start date and onboarding scope', color: 'var(--brand)' },
+                        { step: verdict === 'pass' ? '4' : '4', label: 'Complete security / compliance and procurement reviews (see next steps table)', color: 'var(--brand)' },
+                      ].filter(Boolean).map((item, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          <span style={{ width: 22, height: 22, borderRadius: '50%', background: item.color, color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{item.step}</span>
+                          <span style={{ fontSize: 13, color: 'var(--text2)', paddingTop: 2 }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* S7 — Recommended Next Steps (editable) */}
         <div className="sad-section">
           <div className="sad-section-header">
-            <span className="sad-section-num">Section 06</span>
+            <span className="sad-section-num">Section 07</span>
             <span className="sad-section-title">Recommended Next Steps</span>
           </div>
           <p className="body-text" style={{ marginBottom: 16 }}>Fill in owners and target dates. This table is included in your PDF export and email to your SC.</p>
@@ -1536,10 +1653,10 @@ function SADView({ record, onBack, onCheckIn }) {
           </div>
         </div>
 
-        {/* S7 — Contact */}
+        {/* S8 — Contact */}
         <div className="sad-section">
           <div className="sad-section-header">
-            <span className="sad-section-num">Section 07</span>
+            <span className="sad-section-num">Section 08</span>
             <span className="sad-section-title">Your GoTo Team</span>
           </div>
           <div className="card">
