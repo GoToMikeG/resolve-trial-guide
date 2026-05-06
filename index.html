@@ -283,7 +283,8 @@ const QUESTIONS = [
     id: 'role',
     label: 'Step 1 of 6 — Your Role',
     text: 'What best describes your role?',
-    multi: false,
+    sub: 'Select all that apply.',
+    multi: true,
     options: [
       { id: 'it_admin',       label: 'IT Admin or Systems Administrator' },
       { id: 'helpdesk_lead',  label: 'Help Desk Manager or Support Lead' },
@@ -323,8 +324,9 @@ const QUESTIONS = [
   {
     id: 'painPoint',
     label: 'Step 4 of 6 — Primary Pain',
-    text: 'What is the single biggest problem you need to solve in the next 90 days?',
-    multi: false,
+    text: 'What problems do you need to solve in the next 90 days?',
+    sub: 'Select all that apply. Your guide will be built around your top priorities.',
+    multi: true,
     options: [
       { id: 'remote_access',   label: 'I need faster, more reliable remote access to support my users' },
       { id: 'visibility',      label: 'I have no visibility into what is happening across my devices' },
@@ -338,8 +340,9 @@ const QUESTIONS = [
   {
     id: 'successDef',
     label: 'Step 5 of 6 — Success Definition',
-    text: 'How will you know this trial was a success? Choose the statement that fits best.',
-    multi: false,
+    text: 'How will you know this trial was a success?',
+    sub: 'Select everything that would make this a win for you.',
+    multi: true,
     options: [
       { id: 'unattended_access', label: 'I can remote into any device in my environment without calling the user first' },
       { id: 'live_inventory',    label: 'I have a live inventory of all devices with health and patch status visible' },
@@ -351,9 +354,10 @@ const QUESTIONS = [
   },
   {
     id: 'biggestConcern',
-    label: 'Step 6 of 6 — Your Biggest Concern',
-    text: 'What would most likely cause you to walk away from this evaluation?',
-    multi: false,
+    label: 'Step 6 of 6 — Your Concerns',
+    text: 'What could cause you to walk away from this evaluation?',
+    sub: 'Select all that apply — we will address each one directly in your guide.',
+    multi: true,
     options: [
       { id: 'deploy_complexity', label: 'The agent is too complex or disruptive to deploy at scale' },
       { id: 'session_quality',   label: 'Remote sessions are unreliable or slow compared to what I use today' },
@@ -367,16 +371,22 @@ const QUESTIONS = [
 
 /* ─── CONTENT ENGINE ─────────────────────────────────────────────────────── */
 
+const ROLE_MAP = {
+  it_admin: 'IT Admin / Systems Administrator',
+  helpdesk_lead: 'Help Desk Manager / Support Lead',
+  it_director: 'IT Director / VP of IT',
+  msp_owner: 'MSP Owner / Practice Manager',
+  msp_tech: 'MSP Technician / NOC Engineer',
+  it_generalist: 'IT Generalist',
+};
+// Accepts single string or array; always returns a display string
 function getRoleLabel(role) {
-  const map = {
-    it_admin: 'IT Admin / Systems Administrator',
-    helpdesk_lead: 'Help Desk Manager / Support Lead',
-    it_director: 'IT Director / VP of IT',
-    msp_owner: 'MSP Owner / Practice Manager',
-    msp_tech: 'MSP Technician / NOC Engineer',
-    it_generalist: 'IT Generalist',
-  };
-  return map[role] || role;
+  if (Array.isArray(role)) return role.map(r => ROLE_MAP[r] || r).join(' / ');
+  return ROLE_MAP[role] || role || '—';
+}
+// Returns the primary (first) value for content logic
+function getPrimaryRole(role) {
+  return Array.isArray(role) ? role[0] : role;
 }
 
 function getEnvLabel(env) {
@@ -402,41 +412,53 @@ function getStackLabels(stack) {
   return stack.map(s => map[s] || s);
 }
 
+const PAIN_MAP = {
+  remote_access: 'faster, more reliable remote access',
+  visibility: 'full device visibility and inventory',
+  patching: 'automated patch management',
+  helpdesk_broken: 'an integrated helpdesk workflow',
+  tool_reduction: 'tool consolidation and cost reduction',
+  msp_mgmt: 'multi-client MSP management',
+  compliance: 'compliance and security posture reporting',
+};
 function getPainLabel(pain) {
-  const map = {
-    remote_access: 'faster, more reliable remote access',
-    visibility: 'full device visibility and inventory',
-    patching: 'automated patch management',
-    helpdesk_broken: 'an integrated helpdesk workflow',
-    tool_reduction: 'tool consolidation and cost reduction',
-    msp_mgmt: 'multi-client MSP management',
-    compliance: 'compliance and security posture reporting',
-  };
-  return map[pain] || pain;
+  if (Array.isArray(pain)) return pain.map(p => PAIN_MAP[p] || p).join(', ');
+  return PAIN_MAP[pain] || pain || '—';
+}
+function getPrimaryPain(pain) {
+  return Array.isArray(pain) ? pain[0] : pain;
 }
 
+const SUCCESS_MAP = {
+  unattended_access: 'unattended remote access to any device',
+  live_inventory: 'live device inventory with health and patch status',
+  faster_tickets: 'tickets resolved faster via integrated sessions',
+  tool_replaced: 'replacing at least one existing paid tool',
+  msp_console: 'managing multiple client environments from one console',
+  compliance_report: 'a compliance or patch coverage report delivered to leadership',
+};
 function getSuccessLabel(s) {
-  const map = {
-    unattended_access: 'unattended remote access to any device',
-    live_inventory: 'live device inventory with health and patch status',
-    faster_tickets: 'tickets resolved faster via integrated sessions',
-    tool_replaced: 'replacing at least one existing paid tool',
-    msp_console: 'managing multiple client environments from one console',
-    compliance_report: 'a compliance or patch coverage report delivered to leadership',
-  };
-  return map[s] || s;
+  if (Array.isArray(s)) return s.map(x => SUCCESS_MAP[x] || x).join(', ');
+  return SUCCESS_MAP[s] || s || '—';
+}
+function getPrimarySuccess(s) {
+  return Array.isArray(s) ? s[0] : s;
 }
 
+const CONCERN_MAP = {
+  deploy_complexity: 'agent deployment complexity',
+  session_quality: 'remote session reliability and performance',
+  rmm_depth: 'RMM feature depth vs. your current platform',
+  pricing: 'pricing vs. stack consolidation value',
+  team_adoption: 'team adoption and onboarding friction',
+  trial_window: 'getting meaningful results within the trial window',
+};
 function getConcernLabel(c) {
-  const map = {
-    deploy_complexity: 'agent deployment complexity',
-    session_quality: 'remote session reliability and performance',
-    rmm_depth: 'RMM feature depth vs. your current platform',
-    pricing: 'pricing vs. stack consolidation value',
-    team_adoption: 'team adoption and onboarding friction',
-    trial_window: 'getting meaningful results within the trial window',
-  };
-  return map[c] || c;
+  if (Array.isArray(c)) return c.map(x => CONCERN_MAP[x] || x).join(', ');
+  return CONCERN_MAP[c] || c || '—';
+}
+function getPrimaryConcern(c) {
+  return Array.isArray(c) ? c[0] : c;
 }
 
 /* ── Profile summary paragraph ── */
@@ -453,12 +475,18 @@ function buildProfileSummary(answers) {
   else if (stack.length === 1) stackStr = stack[0];
   else stackStr = stack.slice(0, -1).join(', ') + ', and ' + stack[stack.length - 1];
 
-  return `You are evaluating GoTo Resolve as a ${role} responsible for ${env}. Your current environment includes ${stackStr}. The primary outcome you need to achieve in the next 90 days is ${pain}. You will consider this trial a success when you have demonstrated ${success}. Your most significant evaluation risk is ${concern} — this guide is structured to address that directly.`;
+  const painArr = Array.isArray(answers.painPoint) ? answers.painPoint : (answers.painPoint ? [answers.painPoint] : []);
+  const painStr = painArr.length > 1 ? 'your top priorities: ' + pain : pain;
+
+  return `You are evaluating GoTo Resolve as a ${role} responsible for ${env}. Your current environment includes ${stackStr}. The outcomes you need to achieve are ${painStr}. You will consider this trial a success when you have demonstrated ${success}. Your evaluation risk areas are ${concern} — this guide is structured to address each one directly.`;
 }
 
 /* ── First Value Target ── */
 function buildFirstValue(answers) {
-  const { role, painPoint, successDef, envSize } = answers;
+  const role = getPrimaryRole(answers.role);
+  const painPoint = getPrimaryPain(answers.painPoint);
+  const successDef = getPrimarySuccess(answers.successDef);
+  const { envSize } = answers;
 
   if (role === 'helpdesk_lead' || painPoint === 'helpdesk_broken' || successDef === 'faster_tickets') {
     return `Your first value target is to resolve three real helpdesk tickets from creation to close without leaving the Resolve console — one from email, one from the end-user portal, and one created manually by you. Each ticket should escalate to an integrated remote session without opening a separate remote access tool. If you hit all three in your first week, you have proven the core helpdesk-to-session workflow that justifies this platform for your team.`;
@@ -491,7 +519,11 @@ function buildFirstValue(answers) {
 
 /* ── Week-by-week plan ── */
 function buildWeeklyPlan(answers) {
-  const { role, envSize, painPoint, successDef, biggestConcern, currentStack } = answers;
+  const role = getPrimaryRole(answers.role);
+  const painPoint = getPrimaryPain(answers.painPoint);
+  const successDef = getPrimarySuccess(answers.successDef);
+  const biggestConcern = getPrimaryConcern(answers.biggestConcern);
+  const { envSize, currentStack } = answers;
 
   const isMSP = role === 'msp_owner' || role === 'msp_tech' || painPoint === 'msp_mgmt' || successDef === 'msp_console';
   const isHelpdesk = role === 'helpdesk_lead' || painPoint === 'helpdesk_broken' || successDef === 'faster_tickets';
@@ -1187,26 +1219,66 @@ function SADView({ record, onBack, onCheckIn }) {
   }
 
   function buildEmailBody() {
+    const sep = '─'.repeat(60);
+    const thin = '·'.repeat(60);
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const lines = [];
-    lines.push(`GoTo Resolve Trial Evaluation Report`);
-    lines.push(`Prepared: ${new Date().toLocaleDateString()}`);
-    lines.push(`Role: ${getRoleLabel(answers.role)} | Environment: ${getEnvLabel(answers.envSize)}`);
-    lines.push(`Primary goal: ${getPainLabel(answers.painPoint)}`);
-    lines.push(`Success definition: ${getSuccessLabel(answers.successDef)}`);
-    lines.push(`Overall verdict: ${vd.label}`);
+
+    lines.push(`GoTo Resolve — Trial Evaluation Report`);
+    lines.push(sep);
+    lines.push(`Prepared:    ${date}`);
+    lines.push(`Prepared by: ${SC_EMAIL}`);
     lines.push(``);
-    checkIns.forEach(ci => {
-      lines.push(`=== ${ci.week === 5 ? 'End of Trial' : 'Week ' + ci.week} ===`);
-      if (ci.scopeChanged && ci.updatedContext) lines.push(`Scope update: ${ci.updatedContext}`);
-      (ci.criteria || []).forEach(c => {
-        lines.push(`  [${(c.status || 'skipped').toUpperCase()}] ${c.name}${c.comment ? ' — ' + c.comment : ''}`);
+
+    lines.push(`EVALUATOR PROFILE`);
+    lines.push(thin);
+    lines.push(`Role:              ${getRoleLabel(answers.role)}`);
+    lines.push(`Environment:       ${getEnvLabel(answers.envSize)}`);
+    lines.push(`Primary goals:     ${getPainLabel(answers.painPoint)}`);
+    lines.push(`Success criteria:  ${getSuccessLabel(answers.successDef)}`);
+    lines.push(`Key concerns:      ${getConcernLabel(answers.biggestConcern)}`);
+    lines.push(``);
+
+    lines.push(`OVERALL VERDICT`);
+    lines.push(thin);
+    lines.push(`${vd.label}  (${checkIns.length} of 5 check-ins completed)`);
+    lines.push(``);
+
+    if (checkIns.length > 0) {
+      lines.push(`WEEKLY RESULTS`);
+      lines.push(thin);
+      checkIns.forEach(ci => {
+        const wLabel = ci.week === 5 ? 'End of Trial Review' : `Week ${ci.week}`;
+        const scored = (ci.criteria || []).filter(c => c.status && c.status !== 'skipped');
+        const metCount = scored.filter(c => c.status === 'met').length;
+        lines.push(`${wLabel}  (${metCount}/${(ci.criteria||[]).length} tasks met · ${new Date(ci.completedAt).toLocaleDateString()})`);
+        if (ci.scopeChanged && ci.updatedContext) lines.push(`  Scope note: ${ci.updatedContext}`);
+        (ci.criteria || []).forEach(c => {
+          const statusLabel = { met: '✓ Met', partial: '~ Partial', notmet: '✕ Not Met', skipped: '— Not Tested' }[c.status] || '—';
+          lines.push(`  ${statusLabel.padEnd(14)} ${c.name}${c.comment ? `\n                   Note: ${c.comment}` : ''}`);
+        });
+        lines.push(``);
+      });
+    }
+
+    const filledSteps = nextSteps.filter(s => s.owner || s.date || s.notes);
+    if (filledSteps.length > 0) {
+      lines.push(`NEXT STEPS`);
+      lines.push(thin);
+      nextSteps.forEach(s => {
+        if (!s.action) return;
+        lines.push(`• ${s.action}`);
+        if (s.owner) lines.push(`    Owner:  ${s.owner}`);
+        if (s.date)  lines.push(`    Date:   ${s.date}`);
+        if (s.notes) lines.push(`    Notes:  ${s.notes}`);
       });
       lines.push(``);
-    });
-    lines.push(`Next steps:`);
-    nextSteps.forEach(s => {
-      if (s.action) lines.push(`  • ${s.action} | Owner: ${s.owner || 'TBD'} | Date: ${s.date || 'TBD'}`);
-    });
+    }
+
+    lines.push(sep);
+    lines.push(`CONFIDENTIAL — GoTo Solutions Consulting`);
+    lines.push(SC_EMAIL);
+
     return encodeURIComponent(lines.join('\n'));
   }
 
@@ -1887,6 +1959,7 @@ function IntakeFlow({ onComplete }) {
         </div>
         <div className="q-eyebrow">{q.label || `Question ${qIndex + 1} of ${QUESTIONS.length}`}</div>
         <div className="q-text">{q.text}</div>
+        {q.sub && <div className="q-sub">{q.sub}</div>}
 
         {!q.multi && q.options.map(opt => (
           <div key={opt.id} className={`opt-card ${selected === opt.id ? 'selected' : ''}`}
